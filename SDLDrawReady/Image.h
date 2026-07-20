@@ -1,5 +1,5 @@
 #pragma once
-#include "SDL.h"
+#include "SDL3/SDL.h"
 #include <iostream>
 
 class Image
@@ -12,6 +12,6 @@ private:
 public:
 	void LoadImage(std::string name);
 	SDL_Texture* GetTexture();
-	int GetWidth();
-	int GetHeight();
+	float GetWidth();
+	float GetHeight();
 };

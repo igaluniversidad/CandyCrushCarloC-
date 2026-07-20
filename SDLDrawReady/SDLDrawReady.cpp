@@ -1,6 +1,8 @@
 // Gem-Strike.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
-#include "SDL.h"
+
+#include "SDL3/SDL_main.h"
+#include "SDL3/SDL.h"
 #include "GameState.h"
 #include "GameStateManager.h"
 #include "Game.h"

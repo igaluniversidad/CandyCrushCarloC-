@@ -1,5 +1,5 @@
 #include "Image.h"
-#include "SDL_image.h"
+#include "SDL3_image/SDL_image.h"
 #include "Platform.h"
 void Image::LoadImage(std::string name)
 {
@@ -14,12 +14,13 @@ SDL_Texture* Image::GetTexture()
 {
 	return image;
 }
-int Image::GetWidth()
+
+float  Image::GetWidth()
 {
 	return w;
 }
 
-int Image::GetHeight()
+float  Image::GetHeight()
 {
 	return h;
 }

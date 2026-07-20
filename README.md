@@ -1,23 +1,22 @@
-This is a c++ Solution with SDL already setted up for drawing on screen It has already setted up the Linker, external Libs, etc. It also contains SDL-Image & Text, with clases with implementations you can call for drawing, Displaying text or displaying Images, plus Gamestates with the Init, Draw & update States. Also An example of a GameState called "Game". It also contains data Structures made by Myself, feel free to use this project for understanding how to use SDL or a Structure of a game.
+# SDL3 DrawReady Template
 
-=======================================================================================================================================
-Instrucions
-The project is setted up in x86, for compiling clone the project, then compile it (It will tell you you are missing DLLs), but when you compile it will create a Debug Folder. Go to your Debug folder and paste the missing Dlls, they are in paths:
+This is a ready-to-use C++ template pre-configured with **SDL3**, **SDL3_image**, and **SDL3_ttf**. The project has all the linker settings, include directories, and external libraries properly set up so you can start drawing on the screen right away.
 
-SDLDrawReady\ExternalLibs\SDL2_image-2.0.4\lib\x86
--libjpeg-9.dll
--libpng16-16.dll
--libtiff-5.dll
--libwebp-7.dll
--SDL2_image.dll
--zlib1.dll
+### Features
+* **Wrapper Classes:** Clean implementations for rendering images, managing text, and handling colors.
+* **State Management:** A lightweight GameState system with `Init`, `Draw`, and `Update` loops, including a sample `Game` state to help you get started.
+* **Custom Data Structures:** Includes foundational data structures built from scratch, perfect for understanding memory management and extending functionality.
+* **Automated Build Process:** No manual DLL copying required! Post-build events handle the deployment of all necessary dynamic libraries automatically.
 
-SDLDrawReady\ExternalLibs\SDL2-2.0.9\lib\x86
-libfreetype-6
-SDL2
-SDL2_ttf
+### Getting Started
 
+1. Clone the repository to your local machine.
+2. Open the solution (`.sln`) in Visual Studio.
+3. Select your preferred architecture (x64 or x86) and build the project.
+4. Run it! 
 
-after you copy-paste this files to your debug folder it should be ready for you to start using it.
-======================================================================================================================================
-Also feel free to contribute to the project
+*Note: The post-build events will automatically copy all the required DLLs (SDL3, image, ttf, webp, etc.) from the `ExternalLibs` folder directly to your output `Debug` or `Release` directory.*
+
+---
+
+Feel free to use this project as a structural foundation for your own games or as an educational resource to understand how SDL3 works under the hood. Contributions and improvements are always welcome!

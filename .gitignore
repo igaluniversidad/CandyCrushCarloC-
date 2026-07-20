@@ -1,4 +1,19 @@
-.vs
-Debug
-SDLDrawReady\Debug
-Assets
+# Carpetas de Visual Studio
+.vs/
+
+# Carpetas de compilación (Solución)
+Debug/
+Release/
+x64/
+x86/
+Win32/
+
+# Carpetas de compilación (Proyecto)
+SDLDrawReady/Debug/
+SDLDrawReady/Release/
+
+# Archivos locales de usuario
+*.user
+
+# Recursos pesados (Opcional, según lo requieras)
+Assets/

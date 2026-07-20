@@ -91,18 +91,19 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\ExternalLibs\SDL3-3.4.12\include\SDL3;..\ExternalLibsSDL3_image-3.4.4\include\SDL3_image</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\ExternalLibs\SDL3-3.4.12\include;..\ExternalLibs\SDL3_image-3.4.4\include;..\ExternalLibs\SDL3_ttf-3.2.2\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>..\ExternalLibs\SDL3_image-3.4.4\lib\$(PlatformShortName);..\ExternalLibs\SDL3-3.4.12\lib\$(PlatformShortName)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>SDL3.lib;SDL3_test.lib;SDL3_image.lib</AdditionalDependencies>
-      <OutputFile> </OutputFile>
+      <AdditionalLibraryDirectories>..\ExternalLibs\SDL3_image-3.4.4\lib\$(PlatformShortName);..\ExternalLibs\SDL3-3.4.12\lib\$(PlatformShortName);..\ExternalLibs\SDL3_ttf-3.2.2\lib\$(PlatformShortName)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>SDL3.lib;SDL3_test.lib;SDL3_image.lib;SDL3_ttf.lib</AdditionalDependencies>
+      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy "..\ExternalLibs\SDL3\lib\$(PlatformShortName)\*.dll" "$(OutDir)" /y /d.
-xcopy "..\ExternalLibs\SDL3_image-3.4.4\lib\$(PlatformShortName)\*.dll" "$(OutDir)" /y /d</Command>
+      <Command>xcopy "$(ProjectDir)..\ExternalLibs\SDL3-3.4.12\lib\$(PlatformShortName)\*.dll" "$(OutDir)" /y /d
+xcopy "$(ProjectDir)..\ExternalLibs\SDL3_image-3.4.4\lib\$(PlatformShortName)\*.dll" "$(OutDir)" /y /d
+xcopy "$(ProjectDir)..\ExternalLibs\SDL3_ttf-3.2.2\lib\$(PlatformShortName)\*.dll" "$(OutDir)" /y /d</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -114,18 +115,19 @@ xcopy "..\ExternalLibs\SDL3_image-3.4.4\lib\$(PlatformShortName)\*.dll" "$(OutDi
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\ExternalLibs\SDL3-3.4.12\include\SDL3;..\ExternalLibsSDL3_image-3.4.4\include\SDL3_image</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\ExternalLibs\SDL3-3.4.12\include;..\ExternalLibs\SDL3_image-3.4.4\include;..\ExternalLibs\SDL3_ttf-3.2.2\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>..\ExternalLibs\SDL3_image-3.4.4\lib\$(PlatformShortName);..\ExternalLibs\SDL3-3.4.12\lib\$(PlatformShortName)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>SDL3.lib;SDL3_test.lib;SDL3_image.lib</AdditionalDependencies>
-      <OutputFile> </OutputFile>
+      <AdditionalLibraryDirectories>..\ExternalLibs\SDL3_image-3.4.4\lib\$(PlatformShortName);..\ExternalLibs\SDL3-3.4.12\lib\$(PlatformShortName);..\ExternalLibs\SDL3_ttf-3.2.2\lib\$(PlatformShortName)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>SDL3.lib;SDL3_test.lib;SDL3_image.lib;SDL3_ttf.lib</AdditionalDependencies>
+      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy "..\ExternalLibs\SDL3\lib\$(PlatformShortName)\*.dll" "$(OutDir)" /y /d.
-xcopy "..\ExternalLibs\SDL3_image-3.4.4\lib\$(PlatformShortName)\*.dll" "$(OutDir)" /y /d</Command>
+      <Command>xcopy "$(ProjectDir)..\ExternalLibs\SDL3-3.4.12\lib\$(PlatformShortName)\*.dll" "$(OutDir)" /y /d
+xcopy "$(ProjectDir)..\ExternalLibs\SDL3_image-3.4.4\lib\$(PlatformShortName)\*.dll" "$(OutDir)" /y /d
+xcopy "$(ProjectDir)..\ExternalLibs\SDL3_ttf-3.2.2\lib\$(PlatformShortName)\*.dll" "$(OutDir)" /y /d</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -139,20 +141,21 @@ xcopy "..\ExternalLibs\SDL3_image-3.4.4\lib\$(PlatformShortName)\*.dll" "$(OutDi
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\ExternalLibs\SDL3-3.4.12\include\SDL3;..\ExternalLibsSDL3_image-3.4.4\include\SDL3_image</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\ExternalLibs\SDL3-3.4.12\include;..\ExternalLibs\SDL3_image-3.4.4\include;..\ExternalLibs\SDL3_ttf-3.2.2\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>SDL3.lib;SDL3_test.lib;SDL3_image.lib</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\ExternalLibs\SDL3_image-3.4.4\lib\$(PlatformShortName);..\ExternalLibs\SDL3-3.4.12\lib\$(PlatformShortName)</AdditionalLibraryDirectories>
-      <OutputFile> </OutputFile>
+      <AdditionalDependencies>SDL3.lib;SDL3_test.lib;SDL3_image.lib;SDL3_ttf.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\ExternalLibs\SDL3_image-3.4.4\lib\$(PlatformShortName);..\ExternalLibs\SDL3-3.4.12\lib\$(PlatformShortName);..\ExternalLibs\SDL3_ttf-3.2.2\lib\$(PlatformShortName)</AdditionalLibraryDirectories>
+      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy "..\ExternalLibs\SDL3\lib\$(PlatformShortName)\*.dll" "$(OutDir)" /y /d.
-xcopy "..\ExternalLibs\SDL3_image-3.4.4\lib\$(PlatformShortName)\*.dll" "$(OutDir)" /y /d</Command>
+      <Command>xcopy "$(ProjectDir)..\ExternalLibs\SDL3-3.4.12\lib\$(PlatformShortName)\*.dll" "$(OutDir)" /y /d
+xcopy "$(ProjectDir)..\ExternalLibs\SDL3_image-3.4.4\lib\$(PlatformShortName)\*.dll" "$(OutDir)" /y /d
+xcopy "$(ProjectDir)..\ExternalLibs\SDL3_ttf-3.2.2\lib\$(PlatformShortName)\*.dll" "$(OutDir)" /y /d</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -166,20 +169,21 @@ xcopy "..\ExternalLibs\SDL3_image-3.4.4\lib\$(PlatformShortName)\*.dll" "$(OutDi
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\ExternalLibs\SDL3-3.4.12\include\SDL3;..\ExternalLibsSDL3_image-3.4.4\include\SDL3_image</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\ExternalLibs\SDL3-3.4.12\include;..\ExternalLibs\SDL3_image-3.4.4\include;..\ExternalLibs\SDL3_ttf-3.2.2\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>SDL3.lib;SDL3_test.lib;SDL3_image.lib</AdditionalDependencies>
-      <AdditionalLibraryDirectories>..\ExternalLibs\SDL3_image-3.4.4\lib\$(PlatformShortName);..\ExternalLibs\SDL3-3.4.12\lib\$(PlatformShortName)</AdditionalLibraryDirectories>
-      <OutputFile> </OutputFile>
+      <AdditionalDependencies>SDL3.lib;SDL3_test.lib;SDL3_image.lib;SDL3_ttf.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\ExternalLibs\SDL3_image-3.4.4\lib\$(PlatformShortName);..\ExternalLibs\SDL3-3.4.12\lib\$(PlatformShortName);..\ExternalLibs\SDL3_ttf-3.2.2\lib\$(PlatformShortName)</AdditionalLibraryDirectories>
+      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy "..\ExternalLibs\SDL3\lib\$(PlatformShortName)\*.dll" "$(OutDir)" /y /d.
-xcopy "..\ExternalLibs\SDL3_image-3.4.4\lib\$(PlatformShortName)\*.dll" "$(OutDir)" /y /d</Command>
+      <Command>xcopy "$(ProjectDir)..\ExternalLibs\SDL3-3.4.12\lib\$(PlatformShortName)\*.dll" "$(OutDir)" /y /d
+xcopy "$(ProjectDir)..\ExternalLibs\SDL3_image-3.4.4\lib\$(PlatformShortName)\*.dll" "$(OutDir)" /y /d
+xcopy "$(ProjectDir)..\ExternalLibs\SDL3_ttf-3.2.2\lib\$(PlatformShortName)\*.dll" "$(OutDir)" /y /d</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

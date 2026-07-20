@@ -1,6 +1,6 @@
 #pragma once
 #include <string>
-#include "SDL.h"
+#include "SDL3/SDL.h"
 #include "Image.h"
 #include "GameState.h"
 #include "ListaT.h"
@@ -21,15 +21,15 @@ public:
 	Platform(std::string name);
 	~Platform();
 	void RenderClear();
-	void RenderImage(Image* image, int x, int y, float angle);
+	void RenderImage(Image* image, float x, float y, float angle);
 	void RenderPresent();
 
 	//std::vector <SDL_Event>& GetFrameEvents();
 	ListaT<SDL_Event>& GetFrameEvents();
 	void CheckEvent(GameState* obj, bool (GameState::* f)(ListaT<int>* keyDowns, ListaT<int>* keyUps, bool* leftclick, float* mouseX, float* mouseY));
 
-	void DrawRect(int x, int y, int w, int h);
+	void DrawRect(float x, float y, float w, float h);
 private:
-	void RenderTexture(Image* image, int x, int y, double a);
+	void RenderTexture(Image* image, float x, float y, double a);
 
 };
