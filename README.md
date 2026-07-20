@@ -1,5 +1,10 @@
 # SDL3 DrawReady Template
 
+![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
+![C++](https://img.shields.io/badge/C++-17-blue.svg)
+![SDL3](https://img.shields.io/badge/SDL-3.4-green.svg)
+![Status](https://img.shields.io/badge/Status-Active-success.svg)
+
 This is a ready-to-use C++ template pre-configured with **SDL3**, **SDL3_image**, and **SDL3_ttf**. The project has all the linker settings, include directories, and external libraries properly set up so you can start drawing on the screen right away.
 
 ### Features
