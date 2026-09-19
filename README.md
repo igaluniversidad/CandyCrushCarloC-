@@ -1,27 +1,85 @@
-# SDL3 DrawReady Template
+# CandyCrushCarloC++ 🍬
 
-![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
-![C++](https://img.shields.io/badge/C++-17-blue.svg)
-![SDL3](https://img.shields.io/badge/SDL-3.4-green.svg)
-![Status](https://img.shields.io/badge/Status-Active-success.svg)
+Match-3 arcade estilo Candy Crush construido con **tu propia STL** (Stack, Grid, Queue, Flood Fill de `EstructurasDeDatos26-3`) sobre el template SDL3 del docente (`WoWPerro/SDL_DrawReady`).
 
-This is a ready-to-use C++ template pre-configured with **SDL3**, **SDL3_image**, and **SDL3_ttf**. The project has all the linker settings, include directories, and external libraries properly set up so you can start drawing on the screen right away.
+## Cómo jugar
 
-### Features
-* **Wrapper Classes:** Clean implementations for rendering images, managing text, and handling colors.
-* **State Management:** A lightweight GameState system with `Init`, `Draw`, and `Update` loops, including a sample `Game` state to help you get started.
-* **Custom Data Structures:** Includes foundational data structures built from scratch, perfect for understanding memory management and extending functionality.
-* **Automated Build Process:** No manual DLL copying required! Post-build events handle the deployment of all necessary dynamic libraries automatically.
+- **Objetivo:** junta puntos antes de que se acaben los **90 segundos** o los **30 movimientos**.
+- **Mover:** clic en un dulce y luego clic en un vecino adyacente (arriba/abajo/izquierda/derecha). Si el intercambio forma **3+ en línea recta** (horizontal o vertical), explota.
+- **Bomba (gema explosiva):** conecta **4 o más** y nace una bomba de ese color. **Intercámbiala** con cualquier vecino para detonar **toda la mancha conectada** de su color (Flood Fill, sin importar la forma).
+- **Cascadas:** si al caer se forma otro match, puntúa **x2, x3…**.
+- **Pista:** si pasas **5 s** sin jugar, dos dulces palpitan en verde (movimiento válido garantizado).
+- **Anti-bloqueo:** si no hay movimientos posibles, el tablero **se mezcla solo** (sin crear matches directos).
+- **Undo:** botón o tecla `U`, hasta **3 usos** por partida (RingBuffer acotado).
 
-### Getting Started
+### Controles
 
-1. Clone the repository to your local machine.
-2. Open the solution (`.sln`) in Visual Studio.
-3. Select your preferred architecture (x64 or x86) and build the project.
-4. Run it! 
+| Entrada | Acción |
+|---|---|
+| Clic / Enter | Jugar, seleccionar e intercambiar |
+| `P` o `Esc` | Pausa (apila escena) |
+| `U` | Deshacer (3 usos) |
+| `R` | Reiniciar partida |
+| `M` | Volver al menú |
+| Cerrar ventana | Salir |
 
-*Note: The post-build events will automatically copy all the required DLLs (SDL3, image, ttf, webp, etc.) from the `ExternalLibs` folder directly to your output `Debug` or `Release` directory.*
+### Escenas (máquina de estados con tu Stack)
 
----
+`Menu Principal → Gameplay ⇄ Pausa → Game Over`, más `Leaderboard` (top-5 persistente en `Assets/highscores.txt`). Pausa se apila **encima** del Gameplay sin destruirlo; salir/quitar apila y desapila con `Push`/`Pop`.
 
-Feel free to use this project as a structural foundation for your own games or as an educational resource to understand how SDL3 works under the hood. Contributions and improvements are always welcome!
+## Estructuras (todas propias, cero `std::vector/stack/map`)
+
+| Estructura | Archivo | Uso |
+|---|---|---|
+| `Stack<T>` | `SDLDrawReady/MyLib/Stack.h` | `GameStateManager`: Push/Pop de escenas O(1) |
+| `Grid<T>` | `SDLDrawReady/MyLib/Grid.h` | Tablero 8×8 + `FloodFill` recursivo de la bomba |
+| `LinkedQueue<T>` | `SDLDrawReady/MyLib/LinkedQueue.h` | Cola de eventos de destrucción → cascadas |
+| `ObjectPool<T>` ⭐ propia 1 | `SDLDrawReady/MyLib/ObjectPool.h` | Pool fijo de 384 partículas VFX (cero `new` por frame, 60 FPS) |
+| `RingBuffer<T>` ⭐ propia 2 | `SDLDrawReady/MyLib/RingBuffer.h` | Historial acotado de 4 snapshots para Undo (3 usos) |
+
+**Regla de oro:** `Logic/` (`Board`, `MatchLogic`) **no incluye SDL** — solo números. El `Game Loop` lee la lógica y dibuja. Prueba de lógica pura: `LogicTest` (13/13: la L de 3 y el 2×2 dan Flood 3/4 pero Scan 0; la T cuenta 5 sin duplicar el centro).
+
+### Retos implementados (6, se reclaman 4)
+
+1. **Animaciones y VFX** — idle/bounce, caída suave interpolada, explosiones del `ObjectPool`.
+2. **Highscores persistentes** — `Assets/highscores.txt` + pantalla Leaderboard.
+3. **Undo** — `RingBuffer`, límite 3.
+4. **Multiplicador de cascadas** — x2, x3…
+5. *(extra)* **Hint a los 5 s** — busca un swap válido en silencio.
+6. *(extra)* **Shuffle anti-bloqueo** — garantiza jugada posible sin matches directos.
+
+## Compilar y correr
+
+1. Abrir `SDLDrawReady.sln` en **Visual Studio 2022**, plataforma **x64**.
+2. `Debug` para desarrollar, **`Release`** para entregar (runtime estático `/MT` ya configurado).
+3. El post-build copia solo `SDL3.dll`, `SDL3_image.dll`, `SDL3_ttf.dll`, `libpng16-16.dll` y `Assets/` al `OutDir`.
+4. Doble clic a `x64\Release\SDLDrawReady.exe` o a `Build\SDLDrawReady.exe` (carpeta portable con todo incluido).
+
+> Nota: `ExternalLibs/SDL3_ttf` del template solo traía `arm64`; se agregaron los binarios oficiales `x64/x86` (release 3.2.2) para poder enlazar en tu máquina AMD64.
+
+## Estructura del repo
+
+```
+CandyCrushCarloC++/
+├── SDLDrawReady.sln
+├── SDLDrawReady/
+│   ├── MyLib/      Stack, Grid, LinkedQueue (tu librería) + ObjectPool, RingBuffer (propias)
+│   ├── Logic/      Board.h/.cpp, MatchLogic.h  (CERO SDL)
+│   ├── States/     MainMenu, Gameplay, Pause, GameOver, Leaderboard
+│   ├── Game/       CandyConfig, Particle, HighScores
+│   ├── Assets/     gem0-5.png, gem0-5_bomb.png, bg.png, font.ttf, highscores.txt
+│   ├── Platform, Image, Text, GameState(Mananager)  (engine del docente + fixes)
+│   └── ExternalLibs/ SDL3, SDL3_image, SDL3_ttf (x64/x86/arm64)
+├── Build/          juego portable (generado, no se versiona)
+└── docs/           post-mortem
+```
+
+## Créditos
+
+- Engine base: [WoWPerro/SDL_DrawReady](https://github.com/WoWPerro/SDL_DrawReady) (SDL3 + SDL_image + SDL_ttf, MIT).
+- Arte: pixel/candy art propio generado proceduralmente (script en `docs/`), fuente Arial del sistema copiada a `Assets/font.ttf`.
+- Librería de estructuras: `EstructurasDeDatos26-3` (Igal Shturman Poplawsky).
+
+## Datos del alumno
+
+- Nombre: Carlo Igal Shturman Poplawsky · Matrícula: 18139 · SAE Institute México — Estructuras de Datos
