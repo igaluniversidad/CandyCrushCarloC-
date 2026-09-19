@@ -1,19 +1,23 @@
-# Carpetas de Visual Studio
-.vs/
+# Visual Studio (solo raiz)
+/.vs/
 
-# Carpetas de compilación (Solución)
-Debug/
-Release/
-x64/
-x86/
-Win32/
+# Salidas de compilacion (solo raiz de la solucion; NO toca ExternalLibs/*/x64)
+/x64/
+/x86/
+/Debug/
+/Release/
+/Win32/
+/Build/
 
-# Carpetas de compilación (Proyecto)
+# Salidas por proyecto
 SDLDrawReady/Debug/
 SDLDrawReady/Release/
+SDLDrawReady/x64/
+SDLDrawReady/x86/
+SDLDrawReady/Win32/
 
-# Archivos locales de usuario
+# Locales de usuario y simbolos generados
 *.user
+*.pdb
 
-# Recursos pesados (Opcional, según lo requieras)
-Assets/
+# NOTA: Assets/ y ExternalLibs/ SI se versionan (arte + SDL prebuilt).
