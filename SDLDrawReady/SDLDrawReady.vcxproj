@@ -103,7 +103,9 @@
     <PostBuildEvent>
       <Command>xcopy "$(ProjectDir)..\ExternalLibs\SDL3-3.4.12\lib\$(PlatformShortName)\*.dll" "$(OutDir)" /y /d
 xcopy "$(ProjectDir)..\ExternalLibs\SDL3_image-3.4.4\lib\$(PlatformShortName)\*.dll" "$(OutDir)" /y /d
-xcopy "$(ProjectDir)..\ExternalLibs\SDL3_ttf-3.2.2\lib\$(PlatformShortName)\*.dll" "$(OutDir)" /y /d</Command>
+xcopy "$(ProjectDir)..\ExternalLibs\SDL3_ttf-3.2.2\lib\$(PlatformShortName)\*.dll" "$(OutDir)" /y /d
+xcopy "$(ProjectDir)..\ExternalLibs\SDL3_image-3.4.4\lib\$(PlatformShortName)\optional\libpng16-16.dll" "$(OutDir)" /y /d
+xcopy "$(ProjectDir)Assets" "$(OutDir)Assets\" /E /Y /D /I</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -127,7 +129,9 @@ xcopy "$(ProjectDir)..\ExternalLibs\SDL3_ttf-3.2.2\lib\$(PlatformShortName)\*.dl
     <PostBuildEvent>
       <Command>xcopy "$(ProjectDir)..\ExternalLibs\SDL3-3.4.12\lib\$(PlatformShortName)\*.dll" "$(OutDir)" /y /d
 xcopy "$(ProjectDir)..\ExternalLibs\SDL3_image-3.4.4\lib\$(PlatformShortName)\*.dll" "$(OutDir)" /y /d
-xcopy "$(ProjectDir)..\ExternalLibs\SDL3_ttf-3.2.2\lib\$(PlatformShortName)\*.dll" "$(OutDir)" /y /d</Command>
+xcopy "$(ProjectDir)..\ExternalLibs\SDL3_ttf-3.2.2\lib\$(PlatformShortName)\*.dll" "$(OutDir)" /y /d
+xcopy "$(ProjectDir)..\ExternalLibs\SDL3_image-3.4.4\lib\$(PlatformShortName)\optional\libpng16-16.dll" "$(OutDir)" /y /d
+xcopy "$(ProjectDir)Assets" "$(OutDir)Assets\" /E /Y /D /I</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -142,6 +146,7 @@ xcopy "$(ProjectDir)..\ExternalLibs\SDL3_ttf-3.2.2\lib\$(PlatformShortName)\*.dl
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>..\ExternalLibs\SDL3-3.4.12\include;..\ExternalLibs\SDL3_image-3.4.4\include;..\ExternalLibs\SDL3_ttf-3.2.2\include</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -155,7 +160,11 @@ xcopy "$(ProjectDir)..\ExternalLibs\SDL3_ttf-3.2.2\lib\$(PlatformShortName)\*.dl
     <PostBuildEvent>
       <Command>xcopy "$(ProjectDir)..\ExternalLibs\SDL3-3.4.12\lib\$(PlatformShortName)\*.dll" "$(OutDir)" /y /d
 xcopy "$(ProjectDir)..\ExternalLibs\SDL3_image-3.4.4\lib\$(PlatformShortName)\*.dll" "$(OutDir)" /y /d
-xcopy "$(ProjectDir)..\ExternalLibs\SDL3_ttf-3.2.2\lib\$(PlatformShortName)\*.dll" "$(OutDir)" /y /d</Command>
+xcopy "$(ProjectDir)..\ExternalLibs\SDL3_ttf-3.2.2\lib\$(PlatformShortName)\*.dll" "$(OutDir)" /y /d
+xcopy "$(ProjectDir)..\ExternalLibs\SDL3_image-3.4.4\lib\$(PlatformShortName)\optional\libpng16-16.dll" "$(OutDir)" /y /d
+xcopy "$(ProjectDir)Assets" "$(OutDir)Assets\" /E /Y /D /I
+xcopy "$(ProjectDir)..\ExternalLibs\SDL3_image-3.4.4\lib\$(PlatformShortName)\optional\libpng16-16.dll" "$(OutDir)" /y /d
+xcopy "$(ProjectDir)Assets" "$(OutDir)Assets\" /E /Y /D /I</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -170,6 +179,7 @@ xcopy "$(ProjectDir)..\ExternalLibs\SDL3_ttf-3.2.2\lib\$(PlatformShortName)\*.dl
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>..\ExternalLibs\SDL3-3.4.12\include;..\ExternalLibs\SDL3_image-3.4.4\include;..\ExternalLibs\SDL3_ttf-3.2.2\include</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -183,11 +193,12 @@ xcopy "$(ProjectDir)..\ExternalLibs\SDL3_ttf-3.2.2\lib\$(PlatformShortName)\*.dl
     <PostBuildEvent>
       <Command>xcopy "$(ProjectDir)..\ExternalLibs\SDL3-3.4.12\lib\$(PlatformShortName)\*.dll" "$(OutDir)" /y /d
 xcopy "$(ProjectDir)..\ExternalLibs\SDL3_image-3.4.4\lib\$(PlatformShortName)\*.dll" "$(OutDir)" /y /d
-xcopy "$(ProjectDir)..\ExternalLibs\SDL3_ttf-3.2.2\lib\$(PlatformShortName)\*.dll" "$(OutDir)" /y /d</Command>
+xcopy "$(ProjectDir)..\ExternalLibs\SDL3_ttf-3.2.2\lib\$(PlatformShortName)\*.dll" "$(OutDir)" /y /d
+xcopy "$(ProjectDir)..\ExternalLibs\SDL3_image-3.4.4\lib\$(PlatformShortName)\optional\libpng16-16.dll" "$(OutDir)" /y /d
+xcopy "$(ProjectDir)Assets" "$(OutDir)Assets\" /E /Y /D /I</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Game.cpp" />
     <ClCompile Include="GameState.cpp" />
     <ClCompile Include="GameStateManager.cpp" />
     <ClCompile Include="Gif.cpp" />
@@ -198,9 +209,15 @@ xcopy "$(ProjectDir)..\ExternalLibs\SDL3_ttf-3.2.2\lib\$(PlatformShortName)\*.dl
     <ClCompile Include="SDLDrawReady.cpp" />
     <ClCompile Include="StackT.cpp" />
     <ClCompile Include="Text.cpp" />
+    <ClCompile Include="Logic\Board.cpp" />
+    <ClCompile Include="Game\HighScores.cpp" />
+    <ClCompile Include="States\MainMenuState.cpp" />
+    <ClCompile Include="States\LeaderboardState.cpp" />
+    <ClCompile Include="States\PauseState.cpp" />
+    <ClCompile Include="States\GameOverState.cpp" />
+    <ClCompile Include="States\GameplayState.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Game.h" />
     <ClInclude Include="GameState.h" />
     <ClInclude Include="GameStateManager.h" />
     <ClInclude Include="Gif.h" />
@@ -210,6 +227,24 @@ xcopy "$(ProjectDir)..\ExternalLibs\SDL3_ttf-3.2.2\lib\$(PlatformShortName)\*.dl
     <ClInclude Include="Platform.h" />
     <ClInclude Include="StackT.h" />
     <ClInclude Include="Text.h" />
+    <ClInclude Include="MyLib\Stack.h" />
+    <ClInclude Include="MyLib\TNode.h" />
+    <ClInclude Include="MyLib\Grid.h" />
+    <ClInclude Include="MyLib\LinkedQueue.h" />
+    <ClInclude Include="MyLib\ObjectPool.h" />
+    <ClInclude Include="MyLib\RingBuffer.h" />
+    <ClInclude Include="Logic\Board.h" />
+    <ClInclude Include="Logic\MatchLogic.h" />
+    <ClInclude Include="Game\CandyConfig.h" />
+    <ClInclude Include="Game\Particle.h" />
+    <ClInclude Include="Game\HighScores.h" />
+    <ClInclude Include="States\MainMenuState.h" />
+    <ClInclude Include="States\LeaderboardState.h" />
+    <ClInclude Include="States\PauseState.h" />
+    <ClInclude Include="States\GameOverState.h" />
+    <ClInclude Include="States\GameplayState.h" />
+    <ClInclude Include="States\FontUtil.h" />
+    <ClInclude Include="States\UiButton.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
