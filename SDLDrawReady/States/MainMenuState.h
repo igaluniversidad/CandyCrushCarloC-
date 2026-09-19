@@ -3,25 +3,25 @@
 #include "../Image.h"
 #include "../Text.h"
 
-// =====================================================================
-//  MainMenuState - Escena Menu Principal (fondo de la pila).
-// =====================================================================
-
+// Menu principal. Es la primera escena, queda al fondo de la pila.
 class MainMenuState : public GameState
 {
 private:
     Platform* platform;
     GameStateManager* manager;
-    Image* bg;
-    Image* gemShow[6];
-    Text* title;
+    Image* bg;        // fondo del pack
+    Image* logo;      // logo "Cutie Tutti Frutti" del pack
+    Image* mascot;    // el pan tostado de mascota
+    Image* btnImg;    // dibujo del boton
+    Image* gemShow[6];// los 6 personajes para la vitrina
     Text* subtitle;
     Text* best;
     Text* btnPlayT;
     Text* btnBoardT;
     Text* btnExitT;
     Text* hint;
-    float t;
+    float bob[6]; // cuanto flota cada personaje
+    int bdir[6];  // 1 = sube, -1 = baja
 
 public:
     MainMenuState();

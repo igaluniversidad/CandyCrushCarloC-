@@ -67,7 +67,7 @@ CandyCrushCarloC++/
 │   ├── Logic/      Board.h/.cpp, MatchLogic.h  (CERO SDL)
 │   ├── States/     MainMenu, Gameplay, Pause, GameOver, Leaderboard
 │   ├── Game/       CandyConfig, Particle, HighScores
-│   ├── Assets/     gem0-5.png, gem0-5_bomb.png, bg.png, font.ttf, highscores.txt
+│   ├── Assets/     gem0-5.png, gem0-5_bomb.png, logo, mascot, bg, btn, panel, font, highscores
 │   ├── Platform, Image, Text, GameState(Mananager)  (engine del docente + fixes)
 │   └── ExternalLibs/ SDL3, SDL3_image, SDL3_ttf (x64/x86/arm64)
 ├── Build/          juego portable (generado, no se versiona)
@@ -77,7 +77,7 @@ CandyCrushCarloC++/
 ## Créditos
 
 - Engine base: [WoWPerro/SDL_DrawReady](https://github.com/WoWPerro/SDL_DrawReady) (SDL3 + SDL_image + SDL_ttf, MIT).
-- Arte: pixel/candy art propio generado proceduralmente (script en `docs/`), fuente Arial del sistema copiada a `Assets/font.ttf`.
+- Arte: pack gratuito **"Match-3 Game Asset UI Effects Free" (Cutie Tutti Frutti, arte y animación de Ajay Karat)** — personajes, fondo, logo, botones, paneles y fuente SnowDream. Las bombas son el personaje del pack con franjas y brillo agregados en `docs/gen_pack_assets.py`.
 - Librería de estructuras: `EstructurasDeDatos26-3` (Igal Shturman Poplawsky).
 
 ## Datos del alumno

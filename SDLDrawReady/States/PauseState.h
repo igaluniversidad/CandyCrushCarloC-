@@ -15,6 +15,8 @@ class PauseState : public GameState
 private:
     Platform* platform;
     GameStateManager* manager;
+    Image* panel;
+    Image* btnImg;
     Text* title;
     Text* btnResumeT;
     Text* btnRestartT;
@@ -30,5 +32,3 @@ public:
     void Update(float dt) override;
     void Close() override;
 };
-
-GameState* NewPauseState();
