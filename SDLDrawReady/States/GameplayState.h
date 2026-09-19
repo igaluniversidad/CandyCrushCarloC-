@@ -31,6 +31,7 @@ private:
     ObjectPool<Particle>* particles;
 
     Image* bg;
+    Image* btnImg;
     Image* gems[6];
     Image* bombs[6];
 
@@ -76,7 +77,6 @@ private:
     void BeginPopping();
     void FinishPopping();
     void BeginFalling();
-    bool FinishFalling();
     void SpawnExplosion(float cx, float cy, int colorIdx);
     void UpdateParticles(float dt);
     void DrawParticles();
@@ -93,6 +93,3 @@ public:
     void Update(float dt) override;
     void Close() override;
 };
-
-GameState* NewGameplayState();
-GameState* NewMainMenuState();

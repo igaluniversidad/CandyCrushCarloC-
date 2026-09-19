@@ -13,6 +13,8 @@ private:
     Platform* platform;
     GameStateManager* manager;
     Image* bg;
+    Image* panel;
+    Image* btnImg;
     Text* title;
     Text* rows[5];
     Text* btnBackT;
@@ -27,5 +29,3 @@ public:
     void Update(float dt) override;
     void Close() override;
 };
-
-GameState* NewLeaderboardState();

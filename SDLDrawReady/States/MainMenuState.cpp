@@ -1,4 +1,6 @@
 #include "MainMenuState.h"
+#include "GameplayState.h"
+#include "LeaderboardState.h"
 #include "../GameStateManager.h"
 #include "../Game/HighScores.h"
 #include "../Game/CandyConfig.h"
@@ -6,17 +8,13 @@
 #include "UiButton.h"
 #include <cstdio>
 
-extern GameState* NewGameplayState();
-extern GameState* NewLeaderboardState();
-GameState* NewMainMenuState() { return new MainMenuState(); }
-
 MainMenuState::MainMenuState()
 {
     platform = nullptr; manager = nullptr;
-    bg = nullptr; title = nullptr; subtitle = nullptr; best = nullptr;
+    bg = nullptr; logo = nullptr; mascot = nullptr; btnImg = nullptr;
+    subtitle = nullptr; best = nullptr;
     btnPlayT = nullptr; btnBoardT = nullptr; btnExitT = nullptr; hint = nullptr;
-    for (int i = 0; i < 6; ++i) gemShow[i] = nullptr;
-    t = 0;
+    for (int i = 0; i < 6; ++i) { gemShow[i] = nullptr; bob[i] = 0; bdir[i] = 1; }
 }
 
 MainMenuState::~MainMenuState() {}
@@ -25,12 +23,19 @@ void MainMenuState::Init(Platform* p, GameStateManager* m)
 {
     platform = p; manager = m;
     std::string font = ResolveFontPath();
-    SDL_Color white = { 255, 255, 255, 255 };
-    SDL_Color pink = { 255, 150, 210, 255 };
-    SDL_Color yellow = { 255, 230, 120, 255 };
+    SDL_Color blanco = { 255, 255, 255, 255 };
+    SDL_Color amarillo = { 255, 230, 120, 255 };
+    SDL_Color cafe = { 90, 40, 20, 255 }; // letras de los botones (van sobre amarillo)
 
+    // todo el arte sale del pack match-3 del zip
     bg = new Image();
-    bg->LoadImage(CandyConfig::FILE_BG);
+    bg->LoadImage("Assets/bg.png");
+    logo = new Image();
+    logo->LoadImage("Assets/logo.png");
+    mascot = new Image();
+    mascot->LoadImage("Assets/mascot.png");
+    btnImg = new Image();
+    btnImg->LoadImage("Assets/btn.png");
     for (int i = 0; i < 6; ++i)
     {
         gemShow[i] = new Image();
@@ -38,52 +43,51 @@ void MainMenuState::Init(Platform* p, GameStateManager* m)
         snprintf(path, sizeof(path), "Assets/gem%d.png", i);
         gemShow[i]->LoadImage(path);
     }
-    title = new Text(font, 84, "CandyCrushCarloC++", pink);
-    subtitle = new Text(font, 30, "Match-3 arcade con tu propia STL (Stack/Grid/Queue/FloodFill)", white);
+
+    subtitle = new Text(font, 30, "Junta 3 en linea - 4 o mas crea BOMBA", blanco);
     HighScores hs;
     hs.Load(CandyConfig::FILE_HIGHSCORES);
     char buf[64];
     snprintf(buf, sizeof(buf), "Record: %d pts", hs.Best());
-    best = new Text(font, 34, buf, yellow);
-    btnPlayT = new Text(font, 34, "JUGAR (Enter)", white);
-    btnBoardT = new Text(font, 34, "RECORDS", white);
-    btnExitT = new Text(font, 34, "SALIR (Esc)", white);
-    hint = new Text(font, 24, "Arrastra/clic 2 dulces adyacentes - Junta 3+ en linea - 4+ crea BOMBA - 90s / 30 movs", white);
+    best = new Text(font, 34, buf, amarillo);
+    btnPlayT = new Text(font, 30, "JUGAR (Enter)", cafe);
+    btnBoardT = new Text(font, 30, "RECORDS", cafe);
+    btnExitT = new Text(font, 30, "SALIR (Esc)", cafe);
+    hint = new Text(font, 24, "Clic en un dulce y luego en su vecino - 90 segundos / 30 movimientos", blanco);
 }
 
-static UiButton MenuBtn(float y, Text* t) { return UiButton(760, y, 400, 70, t); }
+// me ayuda a no repetir los numeros de los botones
+static UiButton MenuBtn(float y, Text* t, Image* img) { return UiButton(725, y, 470, 72, t, img); }
 
 void MainMenuState::Draw()
 {
     platform->RenderClear();
     if (bg != nullptr && bg->IsValid())
         platform->RenderImageScaled(bg, 0, 0, (float)platform->width, (float)platform->height, 0);
-    else
-    {
-        platform->FillRect(0, 0, (float)platform->width, (float)platform->height, 25, 12, 40, 255);
-    }
-    // Vitrina de dulces con flotacion (idle animation)
+
+    // logo del pack en grande arriba
+    if (logo != nullptr && logo->IsValid())
+        platform->RenderImageScaled(logo, 660, 20, 600, 420, 0);
+
+    // fila de personajes flotando
     for (int i = 0; i < 6; ++i)
     {
         if (gemShow[i] == nullptr || !gemShow[i]->IsValid()) continue;
-        float bob = 0.0f;
-        // sin() sin <cmath>: aproximacion por serie? usamos SDL ticks:
-        float ph = t * 2.0f + i * 0.9f;
-        // pseudo-seno barato con triangulo suavizado
-        float s = ph - (int)(ph / 6.2831f) * 6.2831f;
-        bob = (s < 3.1416f) ? (s / 3.1416f * 2 - 1) : (1 - (s - 3.1416f) / 3.1416f * 2);
-        bob *= 12.0f;
-        platform->RenderImageScaled(gemShow[i], 560.0f + i * 140.0f, 250.0f + bob, 110, 110, 0);
+        platform->RenderImageScaled(gemShow[i], 545.0f + i * 145.0f, 450.0f + bob[i], 120, 120, 0);
     }
-    if (title != nullptr) title->Display(520, 80);
-    if (subtitle != nullptr) subtitle->Display(430, 190);
-    if (best != nullptr) best->Display(830, 400);
+
+    // la mascota a un lado
+    if (mascot != nullptr && mascot->IsValid())
+        platform->RenderImageScaled(mascot, 150, 620, 220, 220, 0);
+
+    if (subtitle != nullptr) subtitle->Display(660, 600);
+    if (best != nullptr) best->Display(830, 650);
 
     float mx = platform->lastmouseX, my = platform->lastmouseY;
-    MenuBtn(470, btnPlayT).Draw(platform, MenuBtn(470, btnPlayT).Contains(mx, my));
-    MenuBtn(560, btnBoardT).Draw(platform, MenuBtn(560, btnBoardT).Contains(mx, my));
-    MenuBtn(650, btnExitT).Draw(platform, MenuBtn(650, btnExitT).Contains(mx, my));
-    if (hint != nullptr) hint->Display(360, 780);
+    MenuBtn(700, btnPlayT, btnImg).Draw(platform, MenuBtn(700, btnPlayT, btnImg).Contains(mx, my));
+    MenuBtn(785, btnBoardT, btnImg).Draw(platform, MenuBtn(785, btnBoardT, btnImg).Contains(mx, my));
+    MenuBtn(870, btnExitT, btnImg).Draw(platform, MenuBtn(870, btnExitT, btnImg).Contains(mx, my));
+    if (hint != nullptr) hint->Display(480, 970);
     platform->RenderPresent();
 }
 
@@ -94,15 +98,15 @@ bool MainMenuState::Input(ListaT<int>* keyDowns, ListaT<int>* keyUps, bool* left
     {
         int k = keyDowns->get_at(i)->value;
         if (k == SDLK_ESCAPE) { manager->RequestQuit(); return true; }
-        if (k == SDLK_RETURN || k == SDLK_SPACE) { manager->RequestPush(NewGameplayState()); return true; }
+        if (k == SDLK_RETURN || k == SDLK_SPACE) { manager->RequestPush(new GameplayState()); return true; }
     }
     if (leftclick != nullptr && *leftclick)
     {
         float mx = (mouseX != nullptr) ? *mouseX : 0;
         float my = (mouseY != nullptr) ? *mouseY : 0;
-        if (MenuBtn(470, btnPlayT).Contains(mx, my)) { manager->RequestPush(NewGameplayState()); return true; }
-        if (MenuBtn(560, btnBoardT).Contains(mx, my)) { manager->RequestPush(NewLeaderboardState()); return true; }
-        if (MenuBtn(650, btnExitT).Contains(mx, my)) { manager->RequestQuit(); return true; }
+        if (MenuBtn(700, btnPlayT, btnImg).Contains(mx, my)) { manager->RequestPush(new GameplayState()); return true; }
+        if (MenuBtn(785, btnBoardT, btnImg).Contains(mx, my)) { manager->RequestPush(new LeaderboardState()); return true; }
+        if (MenuBtn(870, btnExitT, btnImg).Contains(mx, my)) { manager->RequestQuit(); return true; }
     }
     (void)keyUps;
     return false;
@@ -110,14 +114,26 @@ bool MainMenuState::Input(ListaT<int>* keyDowns, ListaT<int>* keyUps, bool* left
 
 void MainMenuState::Update(float dt)
 {
-    t += dt;
+    // cada personaje sube y baja despacito
+    for (int i = 0; i < 6; ++i)
+    {
+        bob[i] = bob[i] + bdir[i] * dt * 25.0f;
+        if (bob[i] > 12) bdir[i] = -1;
+        if (bob[i] < -12) bdir[i] = 1;
+    }
 }
 
 void MainMenuState::Close()
 {
     delete bg; bg = nullptr;
+    delete logo; logo = nullptr;
+    delete mascot; mascot = nullptr;
+    delete btnImg; btnImg = nullptr;
     for (int i = 0; i < 6; ++i) { delete gemShow[i]; gemShow[i] = nullptr; }
-    delete title; delete subtitle; delete best;
-    delete btnPlayT; delete btnBoardT; delete btnExitT; delete hint;
-    title = subtitle = best = btnPlayT = btnBoardT = btnExitT = hint = nullptr;
+    delete subtitle; subtitle = nullptr;
+    delete best; best = nullptr;
+    delete btnPlayT; btnPlayT = nullptr;
+    delete btnBoardT; btnBoardT = nullptr;
+    delete btnExitT; btnExitT = nullptr;
+    delete hint; hint = nullptr;
 }

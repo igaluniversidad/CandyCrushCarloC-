@@ -1,4 +1,6 @@
 #include "GameplayState.h"
+#include "PauseState.h"
+#include "GameOverState.h"
 #include "../GameStateManager.h"
 #include "../Game/CandyConfig.h"
 #include "PauseState.h"
@@ -8,14 +10,11 @@
 #include <cstdio>
 #include <cstring>
 
-GameState* NewGameplayState() { return new GameplayState(); }
-GameState* NewMainMenuState();
-
 GameplayState::GameplayState()
 {
     platform = nullptr; manager = nullptr;
     board = nullptr; destroyQueue = nullptr; history = nullptr; particles = nullptr;
-    bg = nullptr;
+    bg = nullptr; btnImg = nullptr;
     for (int i = 0; i < 6; ++i) { gems[i] = nullptr; bombs[i] = nullptr; }
     scoreT = timeT = movesT = multT = msgT = undoT = nullptr;
     btnPauseT = btnUndoT = btnMenuT = nullptr;
@@ -28,9 +27,14 @@ GameplayState::GameplayState()
     lastScoreShown = lastTimeShown = lastMovesShown = lastMultShown = lastUndoShown = -9999;
     for (int r = 0; r < Board::ROWS; ++r)
         for (int c = 0; c < Board::COLS; ++c) { dying[r][c] = false; cellY[r][c] = 0; }
+    // colores de las particulas, iguales a los personajes del pack
     const unsigned char preset[6][3] = {
-        {235, 60, 90}, {245, 130, 40}, {250, 210, 60},
-        {80, 200, 90}, {70, 140, 250}, {160, 90, 230}
+        {230, 50, 60},    // manzana roja
+        {250, 150, 30},   // naranja
+        {110, 200, 70},   // verde
+        {150, 95, 60},    // coco cafe
+        {240, 130, 220},  // gema rosa
+        {235, 240, 250}   // leche blanca
     };
     for (int i = 0; i < 6; ++i)
         for (int k = 0; k < 3; ++k) gemColor[i][k] = preset[i][k];
@@ -42,6 +46,8 @@ void GameplayState::LoadAssets()
 {
     bg = new Image();
     bg->LoadImage(CandyConfig::FILE_BG);
+    btnImg = new Image();
+    btnImg->LoadImage("Assets/btn.png");
     for (int i = 0; i < 6; ++i)
     {
         char path[64];
@@ -56,20 +62,22 @@ void GameplayState::LoadAssets()
     SDL_Color white = { 255, 255, 255, 255 };
     SDL_Color yellow = { 255, 230, 120, 255 };
     SDL_Color cyan = { 120, 230, 255, 255 };
+    SDL_Color cafe = { 90, 40, 20, 255 }; // botones amarillos llevan letra oscura
     scoreT = new Text(font, 36, "Score: 0", yellow);
     timeT = new Text(font, 36, "Tiempo: 90", white);
     movesT = new Text(font, 36, "Movs: 30", white);
     multT = new Text(font, 32, "x1", cyan);
     msgT = new Text(font, 30, "", white);
     undoT = new Text(font, 30, "Undos: 3", white);
-    btnPauseT = new Text(font, 28, "PAUSA (P)", white);
-    btnUndoT = new Text(font, 28, "UNDO (U)", white);
-    btnMenuT = new Text(font, 28, "MENU (M)", white);
+    btnPauseT = new Text(font, 22, "PAUSA", cafe);
+    btnUndoT = new Text(font, 22, "UNDO", cafe);
+    btnMenuT = new Text(font, 22, "MENU", cafe);
 }
 
 void GameplayState::FreeAssets()
 {
     delete bg; bg = nullptr;
+    delete btnImg; btnImg = nullptr;
     for (int i = 0; i < 6; ++i)
     {
         delete gems[i]; gems[i] = nullptr;
@@ -356,11 +364,6 @@ void GameplayState::BeginFalling()
     phase = Falling;
 }
 
-bool GameplayState::FinishFalling()
-{
-    return true; // el lerp vive en Update; aqui solo se evalua al asentar
-}
-
 void GameplayState::SpawnExplosion(float cx, float cy, int colorIdx)
 {
     if (particles == nullptr) return;
@@ -433,9 +436,9 @@ bool GameplayState::Input(ListaT<int>* keyDowns, ListaT<int>* keyUps, bool* left
     for (int i = 0; i < keyDowns->size; ++i)
     {
         int k = keyDowns->get_at(i)->value;
-        if (k == SDLK_ESCAPE || k == SDLK_P) { manager->RequestPush(NewPauseState()); return true; }
+        if (k == SDLK_ESCAPE || k == SDLK_P) { manager->RequestPush(new PauseState()); return true; }
         if (k == SDLK_M) { manager->RequestPop(); return true; }
-        if (k == SDLK_R) { manager->RequestReplace(NewGameplayState()); return true; }
+        if (k == SDLK_R) { manager->RequestReplace(new GameplayState()); return true; }
         if (k == SDLK_U)
         {
             if (phase == Idle && undosLeft > 0 && history != nullptr && history->Size() > 0)
@@ -469,10 +472,10 @@ bool GameplayState::Input(ListaT<int>* keyDowns, ListaT<int>* keyUps, bool* left
     if (leftclick != nullptr && *leftclick && mouseX != nullptr && mouseY != nullptr)
     {
         float mx = *mouseX, my = *mouseY;
-        UiButton bP(1760, 20, 140, 54, btnPauseT);
-        UiButton bU(1760, 84, 140, 54, btnUndoT);
-        UiButton bM(1760, 148, 140, 54, btnMenuT);
-        if (bP.Contains(mx, my)) { manager->RequestPush(NewPauseState()); return true; }
+        UiButton bP(1760, 20, 140, 54, btnPauseT, btnImg);
+        UiButton bU(1760, 84, 140, 54, btnUndoT, btnImg);
+        UiButton bM(1760, 148, 140, 54, btnMenuT, btnImg);
+        if (bP.Contains(mx, my)) { manager->RequestPush(new PauseState()); return true; }
         if (bU.Contains(mx, my))
         {
             ListaT<int> fake; fake.push_back(SDLK_U);
@@ -590,7 +593,7 @@ void GameplayState::Update(float dt)
                 }
                 if (movesLeft <= 0 || timeLeft <= 0)
                 {
-                    manager->RequestReplace(NewGameOverState(score));
+                    manager->RequestReplace(new GameOverState(score));
                 }
             }
         }
@@ -609,7 +612,7 @@ void GameplayState::Update(float dt)
     {
         if (movesLeft <= 0 || timeLeft <= 0)
         {
-            manager->RequestReplace(NewGameOverState(score));
+            manager->RequestReplace(new GameOverState(score));
         }
     }
     RefreshTexts(false);
@@ -656,13 +659,11 @@ void GameplayState::Draw()
                 if (f > 1) f = 1;
                 scale = 1.0f - f * 0.8f;
             }
-            // Idle bounce en la seleccionada + bombas (sin libm: triangulo)
+            // las bombas palpitan para que se vean especiales
             if (board->IsBomb(r, c))
             {
-                float ph = hintPulse * 3.0f + (r + c) * 0.4f;
-                float s = ph - (int)(ph / 6.2831f) * 6.2831f;
-                float tri = (s < 3.1416f) ? (s / 3.1416f) : (2 - s / 3.1416f);
-                scale *= 1.0f + tri * 0.08f;
+                int tick = ((int)(hintPulse * 3.0f + r + c)) % 2;
+                if (tick == 0) scale = scale * 1.07f;
             }
             float dw = gemSize * scale;
             float dx = x + (CandyConfig::CELL - dw) * 0.5f;
@@ -694,9 +695,9 @@ void GameplayState::Draw()
     DrawParticles();
 
     // Botones derecha
-    UiButton bP(1760, 20, 140, 54, btnPauseT);
-    UiButton bU(1760, 84, 140, 54, btnUndoT);
-    UiButton bM(1760, 148, 140, 54, btnMenuT);
+    UiButton bP(1760, 20, 140, 54, btnPauseT, btnImg);
+    UiButton bU(1760, 84, 140, 54, btnUndoT, btnImg);
+    UiButton bM(1760, 148, 140, 54, btnMenuT, btnImg);
     float mx = platform->lastmouseX, my = platform->lastmouseY;
     bP.Draw(platform, bP.Contains(mx, my));
     bU.Draw(platform, bU.Contains(mx, my));

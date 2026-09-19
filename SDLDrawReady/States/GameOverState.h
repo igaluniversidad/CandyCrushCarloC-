@@ -14,6 +14,8 @@ private:
     Platform* platform;
     GameStateManager* manager;
     Image* bg;
+    Image* panel;
+    Image* btnImg;
     Text* title;
     Text* scoreT;
     Text* bestT;
@@ -33,5 +35,3 @@ public:
     void Update(float dt) override;
     void Close() override;
 };
-
-GameState* NewGameOverState(int score);
