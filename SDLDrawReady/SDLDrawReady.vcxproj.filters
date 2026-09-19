@@ -13,12 +13,21 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="MyLib">
+      <UniqueIdentifier>{A1B2C3D4-E5F6-4711-8244-AAAAAAAAAAAA}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Logic">
+      <UniqueIdentifier>{B1B2C3D4-E5F6-4711-8244-BBBBBBBBBBBB}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Game">
+      <UniqueIdentifier>{C1B2C3D4-E5F6-4711-8244-CCCCCCCCCCCC}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="States">
+      <UniqueIdentifier>{D1B2C3D4-E5F6-4711-8244-DDDDDDDDDDDD}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SDLDrawReady.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Game.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="GameState.cpp">
@@ -36,9 +45,6 @@
     <ClCompile Include="Platform.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Text.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="ListaT.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -48,11 +54,32 @@
     <ClCompile Include="StackT.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Text.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Logic\Board.cpp">
+      <Filter>Logic</Filter>
+    </ClCompile>
+    <ClCompile Include="Game\HighScores.cpp">
+      <Filter>Game</Filter>
+    </ClCompile>
+    <ClCompile Include="States\MainMenuState.cpp">
+      <Filter>States</Filter>
+    </ClCompile>
+    <ClCompile Include="States\LeaderboardState.cpp">
+      <Filter>States</Filter>
+    </ClCompile>
+    <ClCompile Include="States\PauseState.cpp">
+      <Filter>States</Filter>
+    </ClCompile>
+    <ClCompile Include="States\GameOverState.cpp">
+      <Filter>States</Filter>
+    </ClCompile>
+    <ClCompile Include="States\GameplayState.cpp">
+      <Filter>States</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Game.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="GameState.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -79,6 +106,60 @@
     </ClInclude>
     <ClInclude Include="StackT.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MyLib\Stack.h">
+      <Filter>MyLib</Filter>
+    </ClInclude>
+    <ClInclude Include="MyLib\TNode.h">
+      <Filter>MyLib</Filter>
+    </ClInclude>
+    <ClInclude Include="MyLib\Grid.h">
+      <Filter>MyLib</Filter>
+    </ClInclude>
+    <ClInclude Include="MyLib\LinkedQueue.h">
+      <Filter>MyLib</Filter>
+    </ClInclude>
+    <ClInclude Include="MyLib\ObjectPool.h">
+      <Filter>MyLib</Filter>
+    </ClInclude>
+    <ClInclude Include="MyLib\RingBuffer.h">
+      <Filter>MyLib</Filter>
+    </ClInclude>
+    <ClInclude Include="Logic\Board.h">
+      <Filter>Logic</Filter>
+    </ClInclude>
+    <ClInclude Include="Logic\MatchLogic.h">
+      <Filter>Logic</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\CandyConfig.h">
+      <Filter>Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\Particle.h">
+      <Filter>Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\HighScores.h">
+      <Filter>Game</Filter>
+    </ClInclude>
+    <ClInclude Include="States\MainMenuState.h">
+      <Filter>States</Filter>
+    </ClInclude>
+    <ClInclude Include="States\LeaderboardState.h">
+      <Filter>States</Filter>
+    </ClInclude>
+    <ClInclude Include="States\PauseState.h">
+      <Filter>States</Filter>
+    </ClInclude>
+    <ClInclude Include="States\GameOverState.h">
+      <Filter>States</Filter>
+    </ClInclude>
+    <ClInclude Include="States\GameplayState.h">
+      <Filter>States</Filter>
+    </ClInclude>
+    <ClInclude Include="States\FontUtil.h">
+      <Filter>States</Filter>
+    </ClInclude>
+    <ClInclude Include="States\UiButton.h">
+      <Filter>States</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

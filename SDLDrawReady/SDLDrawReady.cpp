@@ -1,19 +1,16 @@
-// Gem-Strike.cpp : This file contains the 'main' function. Program execution begins and ends there.
-//
-
+// CandyCrushCarloC++ : punto de entrada. La pila inicia en el Menu Principal.
 #include "SDL3/SDL_main.h"
 #include "SDL3/SDL.h"
 #include "GameState.h"
 #include "GameStateManager.h"
-#include "Game.h"
-#include <time.h>
+#include "States/MainMenuState.h"
 
 int main(int argc, char* argv[])
 {
-	srand(time(NULL));
-	GameStateManager* manager = new GameStateManager();
-	manager->SetState(new Game());
-	manager->GameLoop();
-	delete manager;
-	return 0;
+    (void)argc; (void)argv;
+    GameStateManager* manager = new GameStateManager();
+    manager->SetState(new MainMenuState());
+    manager->GameLoop();
+    delete manager;
+    return 0;
 }
