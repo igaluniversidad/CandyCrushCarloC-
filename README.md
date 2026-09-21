@@ -39,14 +39,15 @@ Match-3 arcade estilo Candy Crush construido con **tu propia STL** (Stack, Grid,
 
 **Regla de oro:** `Logic/` (`Board`, `MatchLogic`) **no incluye SDL** — solo números. El `Game Loop` lee la lógica y dibuja. Prueba de lógica pura: `LogicTest` (13/13: la L de 3 y el 2×2 dan Flood 3/4 pero Scan 0; la T cuenta 5 sin duplicar el centro).
 
-### Retos implementados (6, se reclaman 4)
+### Retos implementados (5, se reclaman 4 — MODO SIMPLE sin animaciones)
 
-1. **Animaciones y VFX** — idle/bounce, caída suave interpolada, explosiones del `ObjectPool`.
-2. **Highscores persistentes** — `Assets/highscores.txt` + pantalla Leaderboard.
-3. **Undo** — `RingBuffer`, límite 3.
-4. **Multiplicador de cascadas** — x2, x3…
-5. *(extra)* **Hint a los 5 s** — busca un swap válido en silencio.
-6. *(extra)* **Shuffle anti-bloqueo** — garantiza jugada posible sin matches directos.
+1. **Highscores persistentes** — `Assets/highscores.txt` + pantalla Leaderboard.
+2. **Undo** — `RingBuffer`, límite 3.
+3. **Multiplicador de cascadas** — x2, x3… (instantáneo, sin animación).
+4. **Hint a los 5 s** — busca un swap válido, resaltado fijo (sin parpadeo).
+5. *(extra)* **Shuffle anti-bloqueo** — garantiza jugada posible sin matches directos.
+
+> MODO SIMPLE: se eliminaron a propósito caída suave, delays de swap/pop, escalas y física de partículas para defensa simple. El `ObjectPool` sigue integrado (4 cuadritos fijos por explosión, sin física).
 
 ## Compilar y correr
 
