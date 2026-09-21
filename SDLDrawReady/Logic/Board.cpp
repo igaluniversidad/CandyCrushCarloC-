@@ -2,86 +2,94 @@
 
 // ---------------------------------------------------------------------
 // Board.cpp - Logica pura. Prohibido incluir SDL aqui (regla de oro).
+// Todo son numeros en dos Grid: colores (int) y bombas (bool).
+// fila = renglon 0..7 (vertical). columna = 0..7 (horizontal).
 // ---------------------------------------------------------------------
 
-Board::Board(unsigned int seed)
+Board::Board(unsigned int semillaInicial)
 {
-    _colors = new Grid<int>(ROWS, COLS);
-    _bombs = new Grid<bool>(ROWS, COLS);
-    _seed = seed ? seed : 12345u;
+    _coloresTablero = new Grid<int>(ROWS, COLS);
+    _bombasTablero = new Grid<bool>(ROWS, COLS);
+    _semillaAleatoria = semillaInicial ? semillaInicial : 12345u;
     RandomFillNoMatch();
 }
 
 Board::~Board()
 {
-    delete _colors;
-    delete _bombs;
-    _colors = nullptr;
-    _bombs = nullptr;
+    delete _coloresTablero;
+    delete _bombasTablero;
+    _coloresTablero = nullptr;
+    _bombasTablero = nullptr;
 }
 
+// Da un color aleatorio 0..TYPES-1 usando nuestra semilla LCG propia.
 int Board::RandType()
 {
-    return (int)(MatchLogic::LcgNext(_seed) % (unsigned int)TYPES);
+    return (int)(MatchLogic::LcgNext(_semillaAleatoria) % (unsigned int)TYPES);
 }
 
-int Board::Get(int r, int c)
+int Board::Get(int fila, int columna)
 {
-    if (!InBounds(r, c)) return EMPTY;
-    return _colors->Get(r, c);
+    if (!InBounds(fila, columna)) return EMPTY;
+    return _coloresTablero->Get(fila, columna);
 }
 
-bool Board::IsBomb(int r, int c)
+bool Board::IsBomb(int fila, int columna)
 {
-    if (!InBounds(r, c)) return false;
-    return _bombs->Get(r, c);
+    if (!InBounds(fila, columna)) return false;
+    return _bombasTablero->Get(fila, columna);
 }
 
-bool Board::IsEmptyCell(int r, int c)
+bool Board::IsEmptyCell(int fila, int columna)
 {
-    if (!InBounds(r, c)) return true;
-    return _colors->Get(r, c) == EMPTY;
+    if (!InBounds(fila, columna)) return true;
+    return _coloresTablero->Get(fila, columna) == EMPTY;
 }
 
-void Board::SetCell(int r, int c, int color, bool bomb)
+void Board::SetCell(int fila, int columna, int color, bool esBomba)
 {
-    if (!InBounds(r, c)) return;
-    _colors->Set(r, c, color);
-    _bombs->Set(r, c, bomb);
+    if (!InBounds(fila, columna)) return;
+    _coloresTablero->Set(fila, columna, color);
+    _bombasTablero->Set(fila, columna, esBomba);
 }
 
-void Board::SwapCells(int r1, int c1, int r2, int c2)
+void Board::SwapCells(int filaOrigen, int columnaOrigen,
+                      int filaDestino, int columnaDestino)
 {
-    if (!InBounds(r1, c1) || !InBounds(r2, c2)) return;
-    int a = _colors->Get(r1, c1);
-    int b = _colors->Get(r2, c2);
-    bool ba = _bombs->Get(r1, c1);
-    bool bb = _bombs->Get(r2, c2);
-    _colors->Set(r1, c1, b);
-    _colors->Set(r2, c2, a);
-    _bombs->Set(r1, c1, bb);
-    _bombs->Set(r2, c2, ba);
+    if (!InBounds(filaOrigen, columnaOrigen)) return;
+    if (!InBounds(filaDestino, columnaDestino)) return;
+    int colorOrigen = _coloresTablero->Get(filaOrigen, columnaOrigen);
+    int colorDestino = _coloresTablero->Get(filaDestino, columnaDestino);
+    bool bombaOrigen = _bombasTablero->Get(filaOrigen, columnaOrigen);
+    bool bombaDestino = _bombasTablero->Get(filaDestino, columnaDestino);
+    _coloresTablero->Set(filaOrigen, columnaOrigen, colorDestino);
+    _coloresTablero->Set(filaDestino, columnaDestino, colorOrigen);
+    _bombasTablero->Set(filaOrigen, columnaOrigen, bombaDestino);
+    _bombasTablero->Set(filaDestino, columnaDestino, bombaOrigen);
 }
 
 void Board::RandomFillNoMatch()
 {
-    for (int r = 0; r < ROWS; ++r)
+    for (int fila = 0; fila < ROWS; ++fila)
     {
-        for (int c = 0; c < COLS; ++c)
+        for (int columna = 0; columna < COLS; ++columna)
         {
-            int v = 0;
-            // Elige un tipo que no forme 3 con los 2 izquierdos ni 2 arriba.
-            for (int tries = 0; tries < 50; ++tries)
+            int colorCandidato = 0;
+            // Elige un color que NO forme 3 con los 2 de la izquierda
+            // ni con los 2 de arriba. Asi el tablero nace sin matches.
+            for (int intento = 0; intento < 50; ++intento)
             {
-                v = RandType();
-                bool badH = (c >= 2 &&
-                    _colors->Get(r, c - 1) == v && _colors->Get(r, c - 2) == v);
-                bool badV = (r >= 2 &&
-                    _colors->Get(r - 1, c) == v && _colors->Get(r - 2, c) == v);
-                if (!badH && !badV) break;
+                colorCandidato = RandType();
+                bool formaTrioHorizontal = (columna >= 2 &&
+                    _coloresTablero->Get(fila, columna - 1) == colorCandidato &&
+                    _coloresTablero->Get(fila, columna - 2) == colorCandidato);
+                bool formaTrioVertical = (fila >= 2 &&
+                    _coloresTablero->Get(fila - 1, columna) == colorCandidato &&
+                    _coloresTablero->Get(fila - 2, columna) == colorCandidato);
+                if (!formaTrioHorizontal && !formaTrioVertical) break;
             }
-            _colors->Set(r, c, v);
-            _bombs->Set(r, c, false);
+            _coloresTablero->Set(fila, columna, colorCandidato);
+            _bombasTablero->Set(fila, columna, false);
         }
     }
 }
@@ -89,27 +97,32 @@ void Board::RandomFillNoMatch()
 void Board::ShuffleNoMatch()
 {
     // Fisher-Yates sobre arreglo plano + reintentos hasta condicion valida.
-    int flat[ROWS * COLS];
-    for (int r = 0; r < ROWS; ++r)
-        for (int c = 0; c < COLS; ++c)
-            flat[r * COLS + c] = _colors->Get(r, c);
+    int coloresPlanos[ROWS * COLS];
+    for (int fila = 0; fila < ROWS; ++fila)
+        for (int columna = 0; columna < COLS; ++columna)
+            coloresPlanos[fila * COLS + columna] =
+                _coloresTablero->Get(fila, columna);
 
-    bool mark[ROWS][COLS];
-    for (int attempt = 0; attempt < 200; ++attempt)
+    bool marcasTemporales[ROWS][COLS];
+    for (int intentoMezcla = 0; intentoMezcla < 200; ++intentoMezcla)
     {
-        // Barajar
-        for (int i = ROWS * COLS - 1; i > 0; --i)
+        // Barajar el arreglo plano
+        for (int indice = ROWS * COLS - 1; indice > 0; --indice)
         {
-            unsigned int j = MatchLogic::LcgNext(_seed) % (unsigned int)(i + 1);
-            int tmp = flat[i]; flat[i] = flat[j]; flat[j] = tmp;
+            unsigned int indiceAleatorio =
+                MatchLogic::LcgNext(_semillaAleatoria) % (unsigned int)(indice + 1);
+            int temporal = coloresPlanos[indice];
+            coloresPlanos[indice] = coloresPlanos[indiceAleatorio];
+            coloresPlanos[indiceAleatorio] = temporal;
         }
-        for (int r = 0; r < ROWS; ++r)
-            for (int c = 0; c < COLS; ++c)
+        for (int fila = 0; fila < ROWS; ++fila)
+            for (int columna = 0; columna < COLS; ++columna)
             {
-                _colors->Set(r, c, flat[r * COLS + c]);
-                _bombs->Set(r, c, false); // el shuffle limpia bombas (regla simple)
+                _coloresTablero->Set(fila, columna,
+                    coloresPlanos[fila * COLS + columna]);
+                _bombasTablero->Set(fila, columna, false); // el shuffle limpia bombas
             }
-        if (FindMatches(mark) == 0 && HasPossibleMove())
+        if (FindMatches(marcasTemporales) == 0 && HasPossibleMove())
             return;
     }
     // Si tras 200 intentos no se logro (casi imposible en 8x8/6 tipos),
@@ -117,126 +130,159 @@ void Board::ShuffleNoMatch()
     RandomFillNoMatch();
 }
 
-int Board::FindMatches(bool markOut[ROWS][COLS])
+int Board::FindMatches(bool marcaDestruccion[ROWS][COLS])
 {
-    bool flat[ROWS * COLS];
-    int n = MatchLogic::ScanMatches(_colors, ROWS, COLS, flat);
-    for (int r = 0; r < ROWS; ++r)
-        for (int c = 0; c < COLS; ++c)
-            markOut[r][c] = flat[r * COLS + c];
-    return n;
+    bool marcasPlanas[ROWS * COLS];
+    int totalMarcadas = MatchLogic::ScanMatches(
+        _coloresTablero, ROWS, COLS, marcasPlanas);
+    for (int fila = 0; fila < ROWS; ++fila)
+        for (int columna = 0; columna < COLS; ++columna)
+            marcaDestruccion[fila][columna] = marcasPlanas[fila * COLS + columna];
+    return totalMarcadas;
 }
 
 bool Board::HasPossibleMove()
 {
-    SwapHint h;
-    return MatchLogic::FindAnyHint(_colors, ROWS, COLS, h);
+    SwapHint pista;
+    return MatchLogic::FindAnyHint(_coloresTablero, ROWS, COLS, pista);
 }
 
-bool Board::FindHint(int& r1, int& c1, int& r2, int& c2)
+bool Board::FindHint(int& filaOrigen, int& columnaOrigen,
+                     int& filaDestino, int& columnaDestino)
 {
     // Si hay bomba en el tablero, sugerir usarla es valido: busca cualquier
-    // bomba y propone swap con su vecino derecho/abajo.
-    for (int r = 0; r < ROWS; ++r)
-        for (int c = 0; c < COLS; ++c)
-            if (_bombs->Get(r, c))
+    // bomba y propone intercambiarla con su vecino derecho/abajo.
+    for (int fila = 0; fila < ROWS; ++fila)
+        for (int columna = 0; columna < COLS; ++columna)
+            if (_bombasTablero->Get(fila, columna))
             {
-                if (c + 1 < COLS) { r1 = r; c1 = c; r2 = r; c2 = c + 1; return true; }
-                if (r + 1 < ROWS) { r1 = r; c1 = c; r2 = r + 1; c2 = c; return true; }
+                if (columna + 1 < COLS)
+                {
+                    filaOrigen = fila; columnaOrigen = columna;
+                    filaDestino = fila; columnaDestino = columna + 1;
+                    return true;
+                }
+                if (fila + 1 < ROWS)
+                {
+                    filaOrigen = fila; columnaOrigen = columna;
+                    filaDestino = fila + 1; columnaDestino = columna;
+                    return true;
+                }
             }
-    SwapHint h;
-    if (!MatchLogic::FindAnyHint(_colors, ROWS, COLS, h)) return false;
-    r1 = h.r1; c1 = h.c1; r2 = h.r2; c2 = h.c2;
+    SwapHint pista;
+    if (!MatchLogic::FindAnyHint(_coloresTablero, ROWS, COLS, pista)) return false;
+    filaOrigen = pista.r1; columnaOrigen = pista.c1;
+    filaDestino = pista.r2; columnaDestino = pista.c2;
     return true;
 }
 
-int Board::CollectRec(int r, int c, int target, bool* visitedFlat, bool* markFlat)
+int Board::CollectRec(int fila, int columna, int colorObjetivo,
+                      bool* visitadosPlano, bool* marcasPlano)
 {
-    if (r < 0 || r >= ROWS || c < 0 || c >= COLS) return 0;
-    int idx = r * COLS + c;
-    if (visitedFlat[idx]) return 0;
-    if (_colors->Get(r, c) != target) return 0;
-    visitedFlat[idx] = true;
-    markFlat[idx] = true;
-    int n = 1;
-    n += CollectRec(r + 1, c, target, visitedFlat, markFlat);
-    n += CollectRec(r - 1, c, target, visitedFlat, markFlat);
-    n += CollectRec(r, c + 1, target, visitedFlat, markFlat);
-    n += CollectRec(r, c - 1, target, visitedFlat, markFlat);
-    return n;
+    if (fila < 0 || fila >= ROWS || columna < 0 || columna >= COLS) return 0;
+    int indicePlano = fila * COLS + columna;
+    if (visitadosPlano[indicePlano]) return 0;
+    if (_coloresTablero->Get(fila, columna) != colorObjetivo) return 0;
+    visitadosPlano[indicePlano] = true;
+    marcasPlano[indicePlano] = true;
+    int totalConectadas = 1;
+    totalConectadas += CollectRec(fila + 1, columna, colorObjetivo,
+                                 visitadosPlano, marcasPlano);
+    totalConectadas += CollectRec(fila - 1, columna, colorObjetivo,
+                                 visitadosPlano, marcasPlano);
+    totalConectadas += CollectRec(fila, columna + 1, colorObjetivo,
+                                 visitadosPlano, marcasPlano);
+    totalConectadas += CollectRec(fila, columna - 1, colorObjetivo,
+                                 visitadosPlano, marcasPlano);
+    return totalConectadas;
 }
 
-int Board::DetonatePreview(int r, int c, bool markOut[ROWS][COLS])
+int Board::DetonatePreview(int filaBomba, int columnaBomba,
+                           bool marcaDestruccion[ROWS][COLS])
 {
-    for (int i = 0; i < ROWS; ++i)
-        for (int j = 0; j < COLS; ++j)
-            markOut[i][j] = false;
-    if (!InBounds(r, c)) return 0;
-    if (_colors->Get(r, c) == EMPTY) return 0;
+    for (int fila = 0; fila < ROWS; ++fila)
+        for (int columna = 0; columna < COLS; ++columna)
+            marcaDestruccion[fila][columna] = false;
+    if (!InBounds(filaBomba, columnaBomba)) return 0;
+    if (_coloresTablero->Get(filaBomba, columnaBomba) == EMPTY) return 0;
 
     // PASO 1 (obligatorio): tu FloodFill cuenta la mancha del mismo color.
-    // Si el conteo es 0 algo anda mal; aun asi recolectamos para destruir.
-    int counted = _colors->FloodFill(r, c);
-    (void)counted;
+    int celdasContadas = _coloresTablero->FloodFill(filaBomba, columnaBomba);
+    (void)celdasContadas;
 
     // PASO 2: recolector gemelo que junta las celdas (para encolarlas).
-    bool visited[ROWS * COLS];
-    bool marked[ROWS * COLS];
-    for (int i = 0; i < ROWS * COLS; ++i) { visited[i] = false; marked[i] = false; }
-    int target = _colors->Get(r, c);
-    int n = CollectRec(r, c, target, visited, marked);
-    for (int i = 0; i < ROWS; ++i)
-        for (int j = 0; j < COLS; ++j)
-            markOut[i][j] = marked[i * COLS + j];
-    return n;
+    bool visitados[ROWS * COLS];
+    bool marcadas[ROWS * COLS];
+    for (int i = 0; i < ROWS * COLS; ++i)
+    {
+        visitados[i] = false;
+        marcadas[i] = false;
+    }
+    int colorBomba = _coloresTablero->Get(filaBomba, columnaBomba);
+    int totalADestruir = CollectRec(filaBomba, columnaBomba, colorBomba,
+                                   visitados, marcadas);
+    for (int fila = 0; fila < ROWS; ++fila)
+        for (int columna = 0; columna < COLS; ++columna)
+            marcaDestruccion[fila][columna] = marcadas[fila * COLS + columna];
+    return totalADestruir;
 }
 
 void Board::ApplyGravity()
 {
-    for (int c = 0; c < COLS; ++c)
+    for (int columna = 0; columna < COLS; ++columna)
     {
-        int write = ROWS - 1;
-        for (int r = ROWS - 1; r >= 0; --r)
+        // escritor = fila mas baja donde debe caer la siguiente gema viva.
+        int filaEscritura = ROWS - 1;
+        for (int filaLectura = ROWS - 1; filaLectura >= 0; --filaLectura)
         {
-            int v = _colors->Get(r, c);
-            if (v != EMPTY)
+            int colorActual = _coloresTablero->Get(filaLectura, columna);
+            if (colorActual != EMPTY)
             {
-                if (write != r)
+                if (filaEscritura != filaLectura)
                 {
-                    _colors->Set(write, c, v);
-                    _bombs->Set(write, c, _bombs->Get(r, c));
-                    _colors->Set(r, c, EMPTY);
-                    _bombs->Set(r, c, false);
+                    _coloresTablero->Set(filaEscritura, columna, colorActual);
+                    _bombasTablero->Set(filaEscritura, columna,
+                        _bombasTablero->Get(filaLectura, columna));
+                    _coloresTablero->Set(filaLectura, columna, EMPTY);
+                    _bombasTablero->Set(filaLectura, columna, false);
                 }
-                write--;
+                filaEscritura--;
             }
         }
-        for (int r = write; r >= 0; --r)
+        // Rellena los huecos de arriba con dulces nuevos aleatorios.
+        for (int filaNueva = filaEscritura; filaNueva >= 0; --filaNueva)
         {
-            _colors->Set(r, c, RandType());
-            _bombs->Set(r, c, false);
+            _coloresTablero->Set(filaNueva, columna, RandType());
+            _bombasTablero->Set(filaNueva, columna, false);
         }
     }
 }
 
-void Board::SaveTo(BoardSnapshot& out, int score, int moves) const
+void Board::SaveTo(BoardSnapshot& snapshotSalida, int puntajeActual,
+                   int movimientosActuales) const
 {
-    out.rows = ROWS; out.cols = COLS;
-    out.score = score; out.moves = moves;
-    for (int r = 0; r < ROWS; ++r)
-        for (int c = 0; c < COLS; ++c)
+    snapshotSalida.filas = ROWS;
+    snapshotSalida.columnas = COLS;
+    snapshotSalida.puntaje = puntajeActual;
+    snapshotSalida.movimientos = movimientosActuales;
+    for (int fila = 0; fila < ROWS; ++fila)
+        for (int columna = 0; columna < COLS; ++columna)
         {
-            out.colors[r][c] = _colors->Get(r, c);
-            out.bombs[r][c] = _bombs->Get(r, c);
+            snapshotSalida.colores[fila][columna] =
+                _coloresTablero->Get(fila, columna);
+            snapshotSalida.bombas[fila][columna] =
+                _bombasTablero->Get(fila, columna);
         }
 }
 
-void Board::LoadFrom(const BoardSnapshot& snap)
+void Board::LoadFrom(const BoardSnapshot& snapshotOrigen)
 {
-    for (int r = 0; r < ROWS; ++r)
-        for (int c = 0; c < COLS; ++c)
+    for (int fila = 0; fila < ROWS; ++fila)
+        for (int columna = 0; columna < COLS; ++columna)
         {
-            _colors->Set(r, c, snap.colors[r][c]);
-            _bombs->Set(r, c, snap.bombs[r][c]);
+            _coloresTablero->Set(fila, columna,
+                snapshotOrigen.colores[fila][columna]);
+            _bombasTablero->Set(fila, columna,
+                snapshotOrigen.bombas[fila][columna]);
         }
 }
