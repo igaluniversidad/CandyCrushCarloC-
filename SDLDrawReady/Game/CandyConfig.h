@@ -33,10 +33,8 @@ namespace CandyConfig
     // Hint: segundos sin interactuar antes de palpitar la pista.
     static const float HINT_IDLE_TIME = 5.0f;
 
-    // Animaciones (segundos).
-    static const float POP_TIME = 0.28f;
-    static const float SWAP_TIME = 0.16f;
-    static const float FALL_LERP = 10.0f; // velocidad de caida suave
+    // MODO SIMPLE: sin animaciones. Todo se resuelve al instante.
+    // (POP/SWAP/FALL eliminados a proposito para defensa simple.)
 
     // Particulas (ObjectPool acotado: 60 FPS garantizados).
     static const int PARTICLE_POOL = 384;

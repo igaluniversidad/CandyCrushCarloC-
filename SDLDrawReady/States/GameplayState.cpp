@@ -20,13 +20,13 @@ GameplayState::GameplayState()
     btnPauseT = btnUndoT = btnMenuT = nullptr;
     score = 0; movesLeft = CandyConfig::GAME_MOVES; undosLeft = CandyConfig::UNDO_USES;
     cascadeLevel = 1; timeLeft = CandyConfig::GAME_TIME;
-    idleTime = 0; hintPulse = 0; popTimer = 0; swapTimer = 0; msgTimer = 0;
+    idleTime = 0;
     msgBuf[0] = '\0';
     phase = Idle; selR = -1; selC = -1; dyingCount = 0;
     hintR1 = hintC1 = hintR2 = hintC2 = -1; hintReady = false;
     lastScoreShown = lastTimeShown = lastMovesShown = lastMultShown = lastUndoShown = -9999;
     for (int r = 0; r < Board::ROWS; ++r)
-        for (int c = 0; c < Board::COLS; ++c) { dying[r][c] = false; cellY[r][c] = 0; }
+        for (int c = 0; c < Board::COLS; ++c) { dying[r][c] = false; }
     // colores de las particulas, iguales a los personajes del pack
     const unsigned char preset[6][3] = {
         {230, 50, 60},    // manzana roja
@@ -99,13 +99,6 @@ void GameplayState::Init(Platform* p, GameStateManager* m)
     history = new RingBuffer<BoardSnapshot>(CandyConfig::UNDO_CAPACITY);
     particles = new ObjectPool<Particle>(CandyConfig::PARTICLE_POOL);
     LoadAssets();
-    for (int r = 0; r < Board::ROWS; ++r)
-        for (int c = 0; c < Board::COLS; ++c)
-        {
-            float x, y;
-            CellToXY(r, c, x, y);
-            cellY[r][c] = y;
-        }
     BoardSnapshot base;
     board->SaveTo(base, score, movesLeft);
     history->Push(base);
@@ -125,7 +118,6 @@ void GameplayState::Close()
 void GameplayState::SetMsg(const char* s)
 {
     strncpy_s(msgBuf, s ? s : "", sizeof(msgBuf) - 1);
-    msgTimer = 2.8f;
 }
 
 void GameplayState::RefreshTexts(bool force)
@@ -248,8 +240,7 @@ bool GameplayState::TrySwap(int r1, int c1, int r2, int c2)
     selR = selC = -1;
     idleTime = 0; hintReady = false;
     cascadeLevel = 1;
-    phase = Swapping;
-    swapTimer = 0;
+    BeginResolving();
     return true;
 }
 
@@ -270,9 +261,7 @@ void GameplayState::BeginResolving()
 
 void GameplayState::BeginPopping()
 {
-    phase = Popping;
-    popTimer = 0;
-    // VFX: una rafaga por celda condenada (del pool, sin new).
+    // SIMPLE: sin animacion de escala. Solo chispas minimas y resolve instantaneo.
     for (int r = 0; r < Board::ROWS; ++r)
         for (int c = 0; c < Board::COLS; ++c)
         {
@@ -281,8 +270,9 @@ void GameplayState::BeginPopping()
             CellToXY(r, c, x, y);
             int col = board->Get(r, c);
             if (col < 0 || col >= 6) col = 0;
-            SpawnExplosion(x + CandyConfig::CELL * 0.5f, cellY[r][c] + CandyConfig::CELL * 0.5f, col);
+            SpawnExplosion(x + CandyConfig::CELL * 0.5f, y + CandyConfig::CELL * 0.5f, col);
         }
+    FinishPopping();
 }
 
 void GameplayState::FinishPopping()
@@ -329,66 +319,71 @@ void GameplayState::FinishPopping()
     }
     dyingCount = 0;
     destroyQueue->Clear();
+    // SIMPLE: gravedad instantanea + cascadas en bucle (sin fase Falling).
     BeginFalling();
 }
 
 void GameplayState::BeginFalling()
 {
-    // Mapeo visual: cada gema superviviente conserva su Y visual; las
-    // nuevas entran desde arriba. Luego ApplyGravity (logica) y fase Falling.
-    float oldY[Board::ROWS][Board::COLS];
-    for (int r = 0; r < Board::ROWS; ++r)
-        for (int c = 0; c < Board::COLS; ++c) oldY[r][c] = cellY[r][c];
-
-    int src[Board::COLS][Board::ROWS];
-    int srcN[Board::COLS];
-    for (int c = 0; c < Board::COLS; ++c)
-    {
-        srcN[c] = 0;
-        for (int r = 0; r < Board::ROWS; ++r)
-            if (!board->IsEmptyCell(r, c)) src[c][srcN[c]++] = r;
-    }
+    // SIMPLE: gravedad logica instantanea, sin interpolacion visual.
     board->ApplyGravity();
-    for (int c = 0; c < Board::COLS; ++c)
+    phase = Idle;
+    // Cascadas con la Queue: si al caer se formo otro match, se procesa
+    // al instante con multiplicador x2, x3... (max 20 para evitar loop).
+    for (int iter = 0; iter < 20; ++iter)
     {
-        int n = srcN[c];
-        for (int i = 0; i < n; ++i)
-        {
-            int dst = Board::ROWS - n + i;
-            int s = src[c][i];
-            cellY[dst][c] = oldY[s][c];
-        }
-        for (int r = 0; r < Board::ROWS - n; ++r)
-            cellY[r][c] = (float)(CandyConfig::BOARD_Y - (Board::ROWS - n - r) * CandyConfig::CELL);
+        bool mark[Board::ROWS][Board::COLS];
+        if (board->FindMatches(mark) <= 0) break;
+        cascadeLevel++;
+        for (int r = 0; r < Board::ROWS; ++r)
+            for (int c = 0; c < Board::COLS; ++c) dying[r][c] = mark[r][c];
+        dyingCount = 0;
+        destroyQueue->Clear();
+        for (int r = 0; r < Board::ROWS; ++r)
+            for (int c = 0; c < Board::COLS; ++c)
+                if (dying[r][c]) { destroyQueue->Enqueue(CellPos(r, c)); dyingCount++; }
+        // Vaciamos la Queue al instante (FIFO) y puntuamos.
+        while (!destroyQueue->IsEmpty()) destroyQueue->Dequeue();
+        int g = dyingCount * CandyConfig::SCORE_PER_GEM * cascadeLevel;
+        score += g;
+        for (int r = 0; r < Board::ROWS; ++r)
+            for (int c = 0; c < Board::COLS; ++c)
+                if (dying[r][c]) { board->SetCell(r, c, Board::EMPTY, false); dying[r][c] = false; }
+        board->ApplyGravity();
     }
-    phase = Falling;
+    cascadeLevel = 1;
+    if (!board->HasPossibleMove())
+    {
+        board->ShuffleNoMatch();
+        SetMsg("Sin movimientos: tablero mezclado.");
+    }
 }
 
 void GameplayState::SpawnExplosion(float cx, float cy, int colorIdx)
 {
+    // SIMPLE: 4 cuadritos fijos por explosion (sin fisica). Sigue usando
+    // el ObjectPool obligatorio, pero sin velocidades ni gravedad.
     if (particles == nullptr) return;
     if (colorIdx < 0 || colorIdx >= 6) colorIdx = 0;
-    for (int i = 0; i < 14; ++i)
+    for (int i = 0; i < 4; ++i)
     {
         Particle* p = particles->Alloc();
-        if (p == nullptr) return; // pool lleno: se dropea, no se traba
-        // Abanico determinista sin libm: alterna X y sube con gravedades
-        // distintas para que se vea organico.
+        if (p == nullptr) return;
         p->x = cx; p->y = cy;
-        p->vx = ((i % 2 == 0) ? 1.0f : -1.0f) * (20.0f + (float)((i * 53) % 140));
-        p->vy = -60.0f - (float)((i * 29) % 180);
-        p->maxLife = 0.45f + (float)(i % 4) * 0.08f;
+        p->vx = 0; p->vy = 0;
+        p->maxLife = 0.25f;
         p->life = p->maxLife;
-        p->size = 5.0f + (float)(i % 3) * 3.0f;
+        p->size = 8.0f;
         p->r = gemColor[colorIdx][0];
         p->g = gemColor[colorIdx][1];
         p->b = gemColor[colorIdx][2];
-        p->gravity = true;
+        p->gravity = false;
     }
 }
 
 void GameplayState::UpdateParticles(float dt)
 {
+    // SIMPLE: solo cuenta regresiva, sin movimiento.
     if (particles == nullptr) return;
     for (int i = 0; i < particles->Capacity(); ++i)
     {
@@ -396,24 +391,18 @@ void GameplayState::UpdateParticles(float dt)
         Particle& p = particles->Get(i);
         p.life -= dt;
         if (p.life <= 0) { particles->FreeAt(i); continue; }
-        if (p.gravity) p.vy += 520.0f * dt;
-        p.x += p.vx * dt;
-        p.y += p.vy * dt;
     }
 }
 
 void GameplayState::DrawParticles()
 {
+    // SIMPLE: cuadritos fijos, sin fade ni escala.
     if (particles == nullptr) return;
     for (int i = 0; i < particles->Capacity(); ++i)
     {
         if (!particles->IsAlive(i)) continue;
         const Particle& p = particles->Get(i);
-        float f = p.life / p.maxLife;
-        if (f < 0) f = 0; if (f > 1) f = 1;
-        unsigned char a = (unsigned char)(200 * f + 55);
-        float s = p.size * (0.5f + 0.5f * f);
-        platform->FillRect(p.x - s * 0.5f, p.y - s * 0.5f, s, s, p.r, p.g, p.b, a);
+        platform->FillRect(p.x - 4, p.y - 4, 8, 8, p.r, p.g, p.b, 255);
     }
 }
 
@@ -426,7 +415,6 @@ void GameplayState::ComputeHintIfNeeded()
     {
         hintR1 = a; hintC1 = b; hintR2 = cc; hintC2 = d;
         hintReady = true;
-        hintPulse = 0;
     }
 }
 
@@ -453,12 +441,7 @@ bool GameplayState::Input(ListaT<int>* keyDowns, ListaT<int>* keyUps, bool* left
                     destroyQueue->Clear();
                     for (int r = 0; r < Board::ROWS; ++r)
                         for (int c = 0; c < Board::COLS; ++c)
-                        {
                             dying[r][c] = false;
-                            float x, y;
-                            CellToXY(r, c, x, y);
-                            cellY[r][c] = y;
-                        }
                     cascadeLevel = 1;
                     SetMsg("Movimiento deshecho.");
                     RefreshTexts(true);
@@ -495,12 +478,7 @@ bool GameplayState::Input(ListaT<int>* keyDowns, ListaT<int>* keyUps, bool* left
                     destroyQueue->Clear();
                     for (int r = 0; r < Board::ROWS; ++r)
                         for (int c = 0; c < Board::COLS; ++c)
-                        {
                             dying[r][c] = false;
-                            float xx, yy;
-                            CellToXY(r, c, xx, yy);
-                            cellY[r][c] = yy;
-                        }
                     cascadeLevel = 1;
                     SetMsg("Movimiento deshecho.");
                     RefreshTexts(true);
@@ -544,76 +522,16 @@ bool GameplayState::Input(ListaT<int>* keyDowns, ListaT<int>* keyUps, bool* left
 
 void GameplayState::Update(float dt)
 {
+    // SIMPLE: sin fases animadas. Todo se resolvio al instante en TrySwap.
+    // Aqui solo: tiempo, pista, particulas minimas y condicion de derrota.
     if (timeLeft > 0) timeLeft -= dt;
     if (timeLeft < 0) timeLeft = 0;
     idleTime += dt;
-    hintPulse += dt;
-    if (msgTimer > 0) { msgTimer -= dt; if (msgTimer <= 0) msgBuf[0] = '\0'; }
     ComputeHintIfNeeded();
     UpdateParticles(dt);
-
-    // Caida suave: cellY -> objetivo logico.
-    if (phase == Falling)
+    if (movesLeft <= 0 || timeLeft <= 0)
     {
-        bool settled = true;
-        float k = dt * CandyConfig::FALL_LERP;
-        if (k > 1) k = 1;
-        for (int r = 0; r < Board::ROWS; ++r)
-            for (int c = 0; c < Board::COLS; ++c)
-            {
-                float target = (float)(CandyConfig::BOARD_Y + r * CandyConfig::CELL);
-                float d = target - cellY[r][c];
-                if (d < -2 || d > 2) settled = false;
-                cellY[r][c] += d * k;
-            }
-        if (settled)
-        {
-            for (int r = 0; r < Board::ROWS; ++r)
-                for (int c = 0; c < Board::COLS; ++c)
-                    cellY[r][c] = (float)(CandyConfig::BOARD_Y + r * CandyConfig::CELL);
-            // Cascadas con la Queue: si la gravedad formo otro match,
-            // se encola con multiplicador x2, x3...
-            bool mark[Board::ROWS][Board::COLS];
-            if (board->FindMatches(mark) > 0)
-            {
-                cascadeLevel++;
-                BeginResolving();
-            }
-            else
-            {
-                cascadeLevel = 1;
-                phase = Idle;
-                if (!board->HasPossibleMove())
-                {
-                    board->ShuffleNoMatch();
-                    for (int r = 0; r < Board::ROWS; ++r)
-                        for (int c = 0; c < Board::COLS; ++c)
-                            cellY[r][c] = (float)(CandyConfig::BOARD_Y + r * CandyConfig::CELL);
-                    SetMsg("Sin movimientos: tablero mezclado.");
-                }
-                if (movesLeft <= 0 || timeLeft <= 0)
-                {
-                    manager->RequestReplace(new GameOverState(score));
-                }
-            }
-        }
-    }
-    else if (phase == Swapping)
-    {
-        swapTimer += dt;
-        if (swapTimer >= CandyConfig::SWAP_TIME) BeginResolving();
-    }
-    else if (phase == Popping)
-    {
-        popTimer += dt;
-        if (popTimer >= CandyConfig::POP_TIME) FinishPopping();
-    }
-    else // Idle
-    {
-        if (movesLeft <= 0 || timeLeft <= 0)
-        {
-            manager->RequestReplace(new GameOverState(score));
-        }
+        manager->RequestReplace(new GameOverState(score));
     }
     RefreshTexts(false);
 }
@@ -650,22 +568,9 @@ void GameplayState::Draw()
             int v = board->Get(r, c);
             if (v < 0 || v >= 6) continue;
             Image* img = board->IsBomb(r, c) ? bombs[v] : gems[v];
-            float x = (float)(CandyConfig::BOARD_X + c * CandyConfig::CELL);
-            float y = cellY[r][c];
-            float scale = 1.0f;
-            if (phase == Popping && dying[r][c])
-            {
-                float f = popTimer / CandyConfig::POP_TIME;
-                if (f > 1) f = 1;
-                scale = 1.0f - f * 0.8f;
-            }
-            // las bombas palpitan para que se vean especiales
-            if (board->IsBomb(r, c))
-            {
-                int tick = ((int)(hintPulse * 3.0f + r + c)) % 2;
-                if (tick == 0) scale = scale * 1.07f;
-            }
-            float dw = gemSize * scale;
+            float x, y;
+            CellToXY(r, c, x, y);
+            float dw = gemSize;
             float dx = x + (CandyConfig::CELL - dw) * 0.5f;
             float dy = y + (CandyConfig::CELL - dw) * 0.5f;
             if (img != nullptr && img->IsValid())
@@ -674,23 +579,20 @@ void GameplayState::Draw()
                 platform->FillRect(dx, dy, dw, dw, gemColor[v][0], gemColor[v][1], gemColor[v][2], 255);
         }
     }
-    // Resaltados
+    // Resaltados (fijos, sin parpadeo)
     if (selR >= 0 && phase == Idle)
     {
-        float x = (float)(CandyConfig::BOARD_X + selC * CandyConfig::CELL);
-        platform->FrameRect(x + 2, cellY[selR][selC] + 2, (float)CandyConfig::CELL - 4, (float)CandyConfig::CELL - 4, 255, 235, 120);
-        platform->FrameRect(x + 5, cellY[selR][selC] + 5, (float)CandyConfig::CELL - 10, (float)CandyConfig::CELL - 10, 255, 235, 120);
+        float x, y;
+        CellToXY(selR, selC, x, y);
+        platform->FrameRect(x + 2, y + 2, (float)CandyConfig::CELL - 4, (float)CandyConfig::CELL - 4, 255, 235, 120);
     }
     if (hintReady && phase == Idle && idleTime >= CandyConfig::HINT_IDLE_TIME)
     {
-        bool blink = ((int)(hintPulse * 3.0f) % 2) == 0;
-        if (blink)
-        {
-            float x1 = (float)(CandyConfig::BOARD_X + hintC1 * CandyConfig::CELL);
-            float x2 = (float)(CandyConfig::BOARD_X + hintC2 * CandyConfig::CELL);
-            platform->FrameRect(x1 + 2, cellY[hintR1][hintC1] + 2, (float)CandyConfig::CELL - 4, (float)CandyConfig::CELL - 4, 120, 255, 170);
-            platform->FrameRect(x2 + 2, cellY[hintR2][hintC2] + 2, (float)CandyConfig::CELL - 4, (float)CandyConfig::CELL - 4, 120, 255, 170);
-        }
+        float x1, y1, x2, y2;
+        CellToXY(hintR1, hintC1, x1, y1);
+        CellToXY(hintR2, hintC2, x2, y2);
+        platform->FrameRect(x1 + 2, y1 + 2, (float)CandyConfig::CELL - 4, (float)CandyConfig::CELL - 4, 120, 255, 170);
+        platform->FrameRect(x2 + 2, y2 + 2, (float)CandyConfig::CELL - 4, (float)CandyConfig::CELL - 4, 120, 255, 170);
     }
     DrawParticles();
 

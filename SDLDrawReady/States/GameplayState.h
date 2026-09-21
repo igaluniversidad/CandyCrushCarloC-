@@ -51,17 +51,12 @@ private:
     int cascadeLevel;
     float timeLeft;
     float idleTime;
-    float hintPulse;
-    float popTimer;
-    float swapTimer;
-    float msgTimer;
     char msgBuf[96];
 
     Phase phase;
     int selR, selC;
     bool dying[Board::ROWS][Board::COLS];
     int dyingCount;
-    float cellY[Board::ROWS][Board::COLS]; // pos Y visual por celda (caida suave)
     int hintR1, hintC1, hintR2, hintC2;
     bool hintReady;
     int lastScoreShown, lastTimeShown, lastMovesShown, lastMultShown, lastUndoShown;
