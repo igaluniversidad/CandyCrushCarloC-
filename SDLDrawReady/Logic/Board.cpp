@@ -179,8 +179,8 @@ bool Board::FindHint(int& filaOrigen, int& columnaOrigen,
             }
     SwapHint pista; // pista generica
     if (!MatchLogic::FindAnyHint(_coloresTablero, ROWS, COLS, pista)) return false; // no hay = bloqueado
-    filaOrigen = pista.r1; columnaOrigen = pista.c1; // primera casilla
-    filaDestino = pista.r2; columnaDestino = pista.c2; // segunda casilla
+    filaOrigen = pista.filaOrigen; columnaOrigen = pista.columnaOrigen; // primera casilla
+    filaDestino = pista.filaDestino; columnaDestino = pista.columnaDestino; // segunda casilla
     return true; // si hay pista
 }
 
