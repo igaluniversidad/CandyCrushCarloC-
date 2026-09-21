@@ -4,34 +4,50 @@
 #include "MatchLogic.h"
 
 // =====================================================================
-//  Board.h - Tablero logico del Match-3 (CERO SDL).
-//  Guarda numeros, no sprites: Grid<int> colores (0..TYPES-1, -1 = vacio)
-//  y Grid<bool> bomba (true = gema explosiva de ese color).
-//  Toda la aleatoriedad usa semilla LCG propia (sin rand global) para que
-//  la logica sea testeable y determinista en la defensa.
+//  Board.h - Tablero LOGICO del Match-3 (CERO SDL, solo numeros).
+//  Guarda dos rejillas del mismo tamano:
+//    _coloresTablero : Grid<int>  (0..TYPES-1 = color, EMPTY(-1) = vacio)
+//    _bombasTablero  : Grid<bool> (true = esa celda es gema explosiva)
+//  La aleatoriedad usa semilla LCG propia (_semillaAleatoria), sin rand()
+//  global, para que la logica sea determinista y testeable en defensa.
 // =====================================================================
 
+// Posicion de una celda: fila + columna (0..7 en tablero 8x8).
 struct CellPos
 {
-    int r, c;
-    CellPos() : r(-1), c(-1) {}
-    CellPos(int rr, int cc) : r(rr), c(cc) {}
-    bool operator==(const CellPos& o) const { return r == o.r && c == o.c; }
+    int fila;
+    int columna;
+    CellPos() : fila(-1), columna(-1) {}
+    CellPos(int filaInicial, int columnaInicial)
+        : fila(filaInicial), columna(columnaInicial) {}
+    bool operator==(const CellPos& otraPosicion) const
+    {
+        return fila == otraPosicion.fila && columna == otraPosicion.columna;
+    }
 };
 
+// Foto completa del tablero para el Undo (RingBuffer guarda 4 de estas).
 struct BoardSnapshot
 {
     static const int MAX = 8;
-    int colors[MAX][MAX];
-    bool bombs[MAX][MAX];
-    int score;
-    int moves;
-    int rows, cols;
+    int colores[MAX][MAX];      // color por celda (-1 = vacia)
+    bool bombas[MAX][MAX];      // true = bomba en esa celda
+    int puntaje;                // score al momento de la foto
+    int movimientos;            // movimientos restantes al momento de la foto
+    int filas;
+    int columnas;
     BoardSnapshot()
     {
-        for (int r = 0; r < MAX; ++r)
-            for (int c = 0; c < MAX; ++c) { colors[r][c] = -1; bombs[r][c] = false; }
-        score = 0; moves = 0; rows = 8; cols = 8;
+        for (int fila = 0; fila < MAX; ++fila)
+            for (int columna = 0; columna < MAX; ++columna)
+            {
+                colores[fila][columna] = -1;
+                bombas[fila][columna] = false;
+            }
+        puntaje = 0;
+        movimientos = 0;
+        filas = 8;
+        columnas = 8;
     }
 };
 
@@ -44,31 +60,41 @@ public:
     static const int EMPTY = -1;
 
 private:
-    Grid<int>* _colors;
-    Grid<bool>* _bombs;
-    unsigned int _seed;
+    Grid<int>* _coloresTablero;
+    Grid<bool>* _bombasTablero;
+    unsigned int _semillaAleatoria;
 
     int RandType();
     // Recolector recursivo gemelo de Grid::FloodRecursivo, pero que ADEMAS
-    // junta las celdas en mark[][] (para destruir la mancha de la bomba).
-    int CollectRec(int r, int c, int target, bool* visitedFlat, bool* markFlat);
+    // junta las celdas en el arreglo de marcas (para destruir la mancha).
+    // fila/columna = celda actual. colorObjetivo = color de la bomba.
+    // visitadosPlano = celdas ya revisadas. marcasPlano = celdas a destruir.
+    int CollectRec(int fila, int columna, int colorObjetivo,
+                   bool* visitadosPlano, bool* marcasPlano);
 
 public:
-    explicit Board(unsigned int seed);
+    explicit Board(unsigned int semillaInicial);
     ~Board();
 
     int Rows() const { return ROWS; }
     int Cols() const { return COLS; }
     int Types() const { return TYPES; }
 
-    void SetSeed(unsigned int s) { _seed = s ? s : 12345u; }
-    bool InBounds(int r, int c) const { return r >= 0 && r < ROWS && c >= 0 && c < COLS; }
+    void SetSeed(unsigned int nuevaSemilla)
+    {
+        _semillaAleatoria = nuevaSemilla ? nuevaSemilla : 12345u;
+    }
+    bool InBounds(int fila, int columna) const
+    {
+        return fila >= 0 && fila < ROWS && columna >= 0 && columna < COLS;
+    }
 
-    int Get(int r, int c);
-    bool IsBomb(int r, int c);
-    bool IsEmptyCell(int r, int c);
-    void SetCell(int r, int c, int color, bool bomb);
-    void SwapCells(int r1, int c1, int r2, int c2);
+    int Get(int fila, int columna);
+    bool IsBomb(int fila, int columna);
+    bool IsEmptyCell(int fila, int columna);
+    void SetCell(int fila, int columna, int color, bool esBomba);
+    void SwapCells(int filaOrigen, int columnaOrigen,
+                   int filaDestino, int columnaDestino);
 
     // Llena sin matches iniciales (para inicio y shuffle garantizado).
     void RandomFillNoMatch();
@@ -77,27 +103,32 @@ public:
     void ShuffleNoMatch();
 
     // Escaneo de lineas -> marca celdas matched. Regresa conteo (sin doble).
-    int FindMatches(bool markOut[ROWS][COLS]);
+    // marcaDestruccion[fila][columna] = true si esa celda es parte de un match.
+    int FindMatches(bool marcaDestruccion[ROWS][COLS]);
     // Hay al menos un movimiento valido? (para anti-bloqueo)
     bool HasPossibleMove();
     // Primer movimiento valido (para Hint). false si bloqueado.
-    bool FindHint(int& r1, int& c1, int& r2, int& c2);
+    // Devuelve dos celdas vecinas que al intercambiarse forman match.
+    bool FindHint(int& filaOrigen, int& columnaOrigen,
+                  int& filaDestino, int& columnaDestino);
 
     // GEMA EXPLOSIVA (usa tu Flood Fill):
-    // 1) _colors->FloodFill(r,c) cuenta la mancha (tu algoritmo, obligatorio).
-    // 2) CollectRec junta las celdas de la mancha en markOut.
+    // 1) _coloresTablero->FloodFill cuenta la mancha (obligatorio).
+    // 2) CollectRec junta las celdas de la mancha en marcaDestruccion.
     // Regresa cuantas celdas se destruirian. No destruye aqui.
-    int DetonatePreview(int r, int c, bool markOut[ROWS][COLS]);
+    int DetonatePreview(int filaBomba, int columnaBomba,
+                        bool marcaDestruccion[ROWS][COLS]);
 
     // Gravedad logica: compacta cada columna hacia abajo y rellena arriba
-    // con aleatorios. Las celdas EMPTY (-1) desaparecen. O(rows*cols).
+    // con aleatorios. Las celdas EMPTY (-1) desaparecen. O(filas*columnas).
     void ApplyGravity();
 
-    void SaveTo(BoardSnapshot& out, int score, int moves) const;
-    void LoadFrom(const BoardSnapshot& snap);
+    void SaveTo(BoardSnapshot& snapshotSalida, int puntajeActual,
+                int movimientosActuales) const;
+    void LoadFrom(const BoardSnapshot& snapshotOrigen);
 
     // Acceso crudo para MatchLogic/tests (solo lectura/escritura puntual).
-    Grid<int>* Colors() { return _colors; }
+    Grid<int>* Colors() { return _coloresTablero; }
 
     Board(const Board&) = delete;
     Board& operator=(const Board&) = delete;

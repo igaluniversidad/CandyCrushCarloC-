@@ -435,7 +435,7 @@ bool GameplayState::Input(ListaT<int>* keyDowns, ListaT<int>* keyUps, bool* left
                 if (history->PopRecent(snap))
                 {
                     board->LoadFrom(snap);
-                    score = snap.score; movesLeft = snap.moves;
+                    score = snap.puntaje; movesLeft = snap.movimientos;
                     undosLeft--;
                     selR = selC = -1;
                     destroyQueue->Clear();
@@ -472,7 +472,7 @@ bool GameplayState::Input(ListaT<int>* keyDowns, ListaT<int>* keyUps, bool* left
                 if (history->PopRecent(snap))
                 {
                     board->LoadFrom(snap);
-                    score = snap.score; movesLeft = snap.moves;
+                    score = snap.puntaje; movesLeft = snap.movimientos;
                     undosLeft--;
                     selR = selC = -1;
                     destroyQueue->Clear();
