@@ -1,180 +1,185 @@
-#pragma once
-// =====================================================================
-//  MatchLogic.h - Lógica pura del Match-3 (CERO SDL, CERO std::vector).
-//  Aqui vive el algoritmo CORRECTO de deteccion: escaneo de lineas rectas.
-//  Flood Fill NO se usa aqui (ver nota en Board/MatchLogic.cpp).
-//  Opera sobre Grid<int> de colores para no acoplar Board <-> MatchLogic.
-// =====================================================================
+#pragma once // incluir una sola vez
+// MatchLogic = detector de trios con escaneo de lineas rectas (lo CORRECTO).
+// NO usa FloodFill. Flood cuenta manchas de cualquier forma (sirve para bomba).
+// Aqui se buscan corridas de 3+ en horizontal y en vertical.
+// Opera sobre Grid<int> de colores para no mezclar Board con dibujos.
+// CERO SDL. CERO std::vector. Solo numeros.
 
-class GridIntFwd;
+class GridIntFwd; // aviso de clase (no se usa directo)
+// Dos casillas vecinas que al cambiarse forman trio (para pista y anti-bloqueo).
 struct SwapHint
 {
-    int r1, c1, r2, c2;
-    bool valid;
+    int filaOrigen; // fila de la primera casilla
+    int columnaOrigen; // columna de la primera casilla
+    int filaDestino; // fila de la vecina
+    int columnaDestino; // columna de la vecina
+    bool valida; // true = si hay pista
 };
 
 namespace MatchLogic
 {
-    // Avanza la semilla LCG (determinista, sin rand() global).
-    unsigned int LcgNext(unsigned int& seed);
+    unsigned int LcgNext(unsigned int& semillaAleatoria); // avanza el azar (sin rand global)
 
-    // Escanea lineas horizontales + verticales buscando corridas >= 3.
-    // Marca outMark (tamanio rows*cols, index = r*cols+c) y regresa
-    // cuantas celdas distintas quedaron marcadas (L/T no se cuentan doble).
-    // Complejidad: O(rows*cols). Itera cada celda 2 veces como maximo.
-    // outMark debe venir en false; EMPTY (-1) nunca matchea.
+    // Escanea filas + columnas buscando corridas de 3 o mas.
+    // marcasSalida[tamano filas*columnas] se llena con true donde hay match.
+    // indice = fila * totalColumnas + columna. La T/L no se cuenta doble.
+    // O(filas*columnas): cada casilla se ve 2 veces maximo. Vacio (-1) nunca cuenta.
     template <class GridT>
-    int ScanMatches(GridT* colors, int rows, int cols, bool* outMark);
+    int ScanMatches(GridT* rejillaColores, int totalFilas, int totalColumnas, bool* marcasSalida);
 
-    // Prueba un swap temporal y dice si generaria match. O(rows*cols).
+    // Prueba un cambio temporal y dice si formaria trio. O(filas*columnas).
     template <class GridT>
-    bool WouldMatchAfterSwap(GridT* colors, int rows, int cols,
-                             int r1, int c1, int r2, int c2);
+    bool WouldMatchAfterSwap(GridT* rejillaColores, int totalFilas, int totalColumnas,
+                             int filaOrigen, int columnaOrigen, int filaDestino, int columnaDestino);
 
-    // Busca el primer swap adyacente que genere match (pista / anti-bloqueo).
-    // Solo prueba derecha y abajo por par para no duplicar. O((rows*cols)^2)
-    // en el peor caso, con tablero 8x8 = ~4k ops: despreciable a 60 FPS
-    // porque solo se llama tras cada turno o cada 5s idle, no por frame.
+    // Busca el primer cambio vecino que forme trio (pista / anti-bloqueo).
+    // Solo prueba derecha y abajo por pareja para no repetir.
+    // Peor caso O((filas*columnas)^2), en 8x8 son ~4k pasos: nada a 60 FPS
+    // porque solo se llama por turno o cada 5 segundos, no por frame.
     template <class GridT>
-    bool FindAnyHint(GridT* colors, int rows, int cols, SwapHint& out);
+    bool FindAnyHint(GridT* rejillaColores, int totalFilas, int totalColumnas, SwapHint& pistaSalida);
 }
 
-// ---- Implementacion template (header-only para no complicar el vcxproj) ----
+// ---- Codigo template (aqui mismo para no complicar el proyecto) ----
 
+// Escanea todo el tablero y marca donde hay trio. Regresa cuantas marco.
 template <class GridT>
-int MatchLogic::ScanMatches(GridT* colors, int rows, int cols, bool* outMark)
+int MatchLogic::ScanMatches(GridT* rejillaColores, int totalFilas, int totalColumnas, bool* marcasSalida)
 {
-    for (int i = 0; i < rows * cols; ++i) outMark[i] = false;
+    for (int indice = 0; indice < totalFilas * totalColumnas; ++indice) marcasSalida[indice] = false; // limpia todo en false
 
-    // Horizontales: corridas por renglon.
-    for (int r = 0; r < rows; ++r)
+    // Horizontales: recorre cada fila de izquierda a derecha.
+    for (int fila = 0; fila < totalFilas; ++fila) // por cada fila...
     {
-        int runStart = 0;
-        for (int c = 1; c <= cols; ++c)
+        int inicioRacha = 0; // donde empezo la racha del mismo color
+        for (int columna = 1; columna <= totalColumnas; ++columna) // recorre columnas + 1 extra para cerrar
         {
-            int cur = (c < cols) ? colors->Get(r, c) : -9999;
-            int startVal = colors->Get(r, runStart);
-            bool same = (c < cols) && (cur == startVal) && (startVal != -1);
-            if (same) continue;
-            int runLen = c - runStart;
-            if (startVal != -1 && runLen >= 3)
+            int colorActual = (columna < totalColumnas) ? rejillaColores->Get(fila, columna) : -9999; // color de hoy (-9999 al final para forzar cierre)
+            int colorInicio = rejillaColores->Get(fila, inicioRacha); // color con el que empezo la racha
+            bool esIgual = (columna < totalColumnas) && (colorActual == colorInicio) && (colorInicio != -1); // mismo color y no vacio?
+            if (esIgual) continue; // sigue la racha, no cortes
+            int largoRacha = columna - inicioRacha; // cuantas seguidas hubo
+            if (colorInicio != -1 && largoRacha >= 3) // trio o mas y no vacio?
             {
-                for (int k = runStart; k < c; ++k)
-                    outMark[r * cols + k] = true;
+                for (int columnaMarcada = inicioRacha; columnaMarcada < columna; ++columnaMarcada) // marca cada una...
+                    marcasSalida[fila * totalColumnas + columnaMarcada] = true; // ...en true (si ya estaba, sigue true: no cuenta doble)
             }
-            runStart = c;
+            inicioRacha = columna; // la proxima racha empieza aqui
         }
     }
-    // Verticales: corridas por columna.
-    for (int c = 0; c < cols; ++c)
+    // Verticales: recorre cada columna de arriba a abajo (igual que arriba).
+    for (int columna = 0; columna < totalColumnas; ++columna) // por cada columna...
     {
-        int runStart = 0;
-        for (int r = 1; r <= rows; ++r)
+        int inicioRacha = 0; // donde empezo la racha
+        for (int fila = 1; fila <= totalFilas; ++fila) // recorre filas + 1 extra para cerrar
         {
-            int cur = (r < rows) ? colors->Get(r, c) : -9999;
-            int startVal = colors->Get(runStart, c);
-            bool same = (r < rows) && (cur == startVal) && (startVal != -1);
-            if (same) continue;
-            int runLen = r - runStart;
-            if (startVal != -1 && runLen >= 3)
+            int colorActual = (fila < totalFilas) ? rejillaColores->Get(fila, columna) : -9999; // color de hoy
+            int colorInicio = rejillaColores->Get(inicioRacha, columna); // color de inicio
+            bool esIgual = (fila < totalFilas) && (colorActual == colorInicio) && (colorInicio != -1); // mismo y no vacio?
+            if (esIgual) continue; // sigue la racha
+            int largoRacha = fila - inicioRacha; // cuantas seguidas
+            if (colorInicio != -1 && largoRacha >= 3) // trio o mas?
             {
-                for (int k = runStart; k < r; ++k)
-                    outMark[k * cols + c] = true;
+                for (int filaMarcada = inicioRacha; filaMarcada < fila; ++filaMarcada) // marca cada una...
+                    marcasSalida[filaMarcada * totalColumnas + columna] = true; // ...en true
             }
-            runStart = r;
+            inicioRacha = fila; // proxima racha aqui
         }
     }
-    int count = 0;
-    for (int i = 0; i < rows * cols; ++i)
-        if (outMark[i]) ++count;
-    return count;
+    int totalMarcadas = 0; // contador final
+    for (int indice = 0; indice < totalFilas * totalColumnas; ++indice) // cuenta las true...
+        if (marcasSalida[indice]) ++totalMarcadas; // ...una por una
+    return totalMarcadas; // cuantas casillas son match
 }
 
+// Prueba dos vecinas: las cambia un momento, revisa si hay trio, y las regresa.
 template <class GridT>
-bool MatchLogic::WouldMatchAfterSwap(GridT* colors, int rows, int cols,
-                                     int r1, int c1, int r2, int c2)
+bool MatchLogic::WouldMatchAfterSwap(GridT* rejillaColores, int totalFilas, int totalColumnas,
+                                     int filaOrigen, int columnaOrigen, int filaDestino, int columnaDestino)
 {
-    if (r1 < 0 || r1 >= rows || c1 < 0 || c1 >= cols) return false;
-    if (r2 < 0 || r2 >= rows || c2 < 0 || c2 >= cols) return false;
-    int dr = r1 - r2; if (dr < 0) dr = -dr;
-    int dc = c1 - c2; if (dc < 0) dc = -dc;
-    if (dr + dc != 1) return false;
+    if (filaOrigen < 0 || filaOrigen >= totalFilas || columnaOrigen < 0 || columnaOrigen >= totalColumnas) return false; // origen fuera = no
+    if (filaDestino < 0 || filaDestino >= totalFilas || columnaDestino < 0 || columnaDestino >= totalColumnas) return false; // destino fuera = no
+    int distanciaFilas = filaOrigen - filaDestino; if (distanciaFilas < 0) distanciaFilas = -distanciaFilas; // distancia vertical sin signo
+    int distanciaColumnas = columnaOrigen - columnaDestino; if (distanciaColumnas < 0) distanciaColumnas = -distanciaColumnas; // distancia horizontal sin signo
+    if (distanciaFilas + distanciaColumnas != 1) return false; // no vecinas = no
 
-    int a = colors->Get(r1, c1);
-    int b = colors->Get(r2, c2);
-    if (a == -1 || b == -1) return false;
+    int colorOrigen = rejillaColores->Get(filaOrigen, columnaOrigen); // guarda color 1
+    int colorDestino = rejillaColores->Get(filaDestino, columnaDestino); // guarda color 2
+    if (colorOrigen == -1 || colorDestino == -1) return false; // vacia = no
 
-    colors->Set(r1, c1, b);
-    colors->Set(r2, c2, a);
+    rejillaColores->Set(filaOrigen, columnaOrigen, colorDestino); // cambio temporal 1
+    rejillaColores->Set(filaDestino, columnaDestino, colorOrigen); // cambio temporal 2
 
-    // Escaneo rapido con salida temprana: basta saber si hay >= 1 corrida.
-    bool found = false;
-    // Checar solo filas/columnas afectadas (r1,r2,c1,c2) en vez de todo.
-    // Filas r1 y r2:
-    int rowsChk[2] = { r1, r2 };
-    for (int i = 0; i < 2 && !found; ++i)
+    // Revisa rapido solo las 2 filas y 2 columnas tocadas (con salida temprana).
+    bool encontroTrio = false; // aun no hay
+    // Filas tocadas (origen y destino):
+    int filasRevisadas[2] = { filaOrigen, filaDestino }; // solo estas 2 filas
+    for (int indice = 0; indice < 2 && !encontroTrio; ++indice) // por cada fila tocada...
     {
-        int r = rowsChk[i];
-        int run = 1;
-        for (int c = 1; c < cols; ++c)
+        int fila = filasRevisadas[indice]; // fila a revisar
+        int rachaActual = 1; // racha empieza en 1
+        for (int columna = 1; columna < totalColumnas; ++columna) // recorre la fila...
         {
-            int v0 = colors->Get(r, c);
-            int v1 = colors->Get(r, c - 1);
-            if (v0 != -1 && v0 == v1) { run++; if (run >= 3) { found = true; break; } }
-            else run = 1;
+            int colorHoy = rejillaColores->Get(fila, columna); // color de hoy
+            int colorAyer = rejillaColores->Get(fila, columna - 1); // color anterior
+            if (colorHoy != -1 && colorHoy == colorAyer) { rachaActual++; if (rachaActual >= 3) { encontroTrio = true; break; } } // suma, si llega a 3 listo
+            else rachaActual = 1; // se corto, reinicia en 1
         }
     }
-    // Columnas c1 y c2:
-    int colsChk[2] = { c1, c2 };
-    for (int i = 0; i < 2 && !found; ++i)
+    // Columnas tocadas (origen y destino):
+    int columnasRevisadas[2] = { columnaOrigen, columnaDestino }; // solo estas 2 columnas
+    for (int indice = 0; indice < 2 && !encontroTrio; ++indice) // por cada columna tocada...
     {
-        int c = colsChk[i];
-        int run = 1;
-        for (int r = 1; r < rows; ++r)
+        int columna = columnasRevisadas[indice]; // columna a revisar
+        int rachaActual = 1; // racha en 1
+        for (int fila = 1; fila < totalFilas; ++fila) // recorre la columna...
         {
-            int v0 = colors->Get(r, c);
-            int v1 = colors->Get(r - 1, c);
-            if (v0 != -1 && v0 == v1) { run++; if (run >= 3) { found = true; break; } }
-            else run = 1;
+            int colorHoy = rejillaColores->Get(fila, columna); // color de hoy
+            int colorAyer = rejillaColores->Get(fila - 1, columna); // color anterior
+            if (colorHoy != -1 && colorHoy == colorAyer) { rachaActual++; if (rachaActual >= 3) { encontroTrio = true; break; } } // suma, si 3 listo
+            else rachaActual = 1; // se corto
         }
     }
 
-    colors->Set(r1, c1, a);
-    colors->Set(r2, c2, b);
-    return found;
+    rejillaColores->Set(filaOrigen, columnaOrigen, colorOrigen); // regresa cambio 1
+    rejillaColores->Set(filaDestino, columnaDestino, colorDestino); // regresa cambio 2
+    return encontroTrio; // true = este cambio SI forma trio
 }
 
+// Busca en todo el tablero el primer cambio vecino que forme trio.
 template <class GridT>
-bool MatchLogic::FindAnyHint(GridT* colors, int rows, int cols, SwapHint& out)
+bool MatchLogic::FindAnyHint(GridT* rejillaColores, int totalFilas, int totalColumnas, SwapHint& pistaSalida)
 {
-    out.valid = false;
-    for (int r = 0; r < rows; ++r)
+    pistaSalida.valida = false; // empieza sin pista
+    for (int fila = 0; fila < totalFilas; ++fila) // por cada fila...
     {
-        for (int c = 0; c < cols; ++c)
+        for (int columna = 0; columna < totalColumnas; ++columna) // por cada columna...
         {
-            if (colors->Get(r, c) == -1) continue;
-            // Solo derecha y abajo (cada par una vez).
-            const int dr[2] = { 0, 1 };
-            const int dc[2] = { 1, 0 };
-            for (int k = 0; k < 2; ++k)
+            if (rejillaColores->Get(fila, columna) == -1) continue; // vacia = salta
+            // Solo derecha y abajo (cada pareja se prueba una sola vez).
+            const int pasoFila[2] = { 0, 1 }; // 0 = derecha, 1 = abajo
+            const int pasoColumna[2] = { 1, 0 }; // 1 = derecha, 0 = abajo
+            for (int direccion = 0; direccion < 2; ++direccion) // prueba las 2 direcciones...
             {
-                int r2 = r + dr[k], c2 = c + dc[k];
-                if (r2 < 0 || r2 >= rows || c2 < 0 || c2 >= cols) continue;
-                if (colors->Get(r2, c2) == -1) continue;
-                if (WouldMatchAfterSwap(colors, rows, cols, r, c, r2, c2))
+                int filaVecina = fila + pasoFila[direccion]; // fila del vecino
+                int columnaVecina = columna + pasoColumna[direccion]; // columna del vecino
+                if (filaVecina < 0 || filaVecina >= totalFilas || columnaVecina < 0 || columnaVecina >= totalColumnas) continue; // fuera = salta
+                if (rejillaColores->Get(filaVecina, columnaVecina) == -1) continue; // vecina vacia = salta
+                if (WouldMatchAfterSwap(rejillaColores, totalFilas, totalColumnas, fila, columna, filaVecina, columnaVecina)) // este cambio forma trio?
                 {
-                    out.r1 = r; out.c1 = c; out.r2 = r2; out.c2 = c2;
-                    out.valid = true;
-                    return true;
+                    pistaSalida.filaOrigen = fila; pistaSalida.columnaOrigen = columna; pistaSalida.filaDestino = filaVecina; pistaSalida.columnaDestino = columnaVecina; // guarda las 2 casillas
+                    pistaSalida.valida = true; // si hay pista
+                    return true; // regresa la primera que halle
                 }
             }
         }
     }
-    return false;
+    return false; // no hallo ninguna = bloqueado
 }
 
-inline unsigned int MatchLogic::LcgNext(unsigned int& seed)
+// Avanza la semilla del azar (formula LCG). Sin rand() global para que sea determinista.
+inline unsigned int MatchLogic::LcgNext(unsigned int& semillaAleatoria)
 {
-    seed = seed * 1664525u + 1013904223u;
-    return (seed >> 16) & 0x7FFFu;
+    semillaAleatoria = semillaAleatoria * 1664525u + 1013904223u; // mezcla la semilla
+    return (semillaAleatoria >> 16) & 0x7FFFu; // regresa 15 bits de azar
 }
