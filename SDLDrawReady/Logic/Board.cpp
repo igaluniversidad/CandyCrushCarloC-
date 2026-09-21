@@ -1,288 +1,300 @@
-#include "Board.h"
+#include "Board.h" // trae fila, columna, colores, bombas
 
-// ---------------------------------------------------------------------
-// Board.cpp - Logica pura. Prohibido incluir SDL aqui (regla de oro).
-// Todo son numeros en dos Grid: colores (int) y bombas (bool).
-// fila = renglon 0..7 (vertical). columna = 0..7 (horizontal).
-// ---------------------------------------------------------------------
+// Board.cpp = solo numeros. Aqui NO hay dibujos ni SDL.
 
+// Crea el tablero con una semilla para el azar.
 Board::Board(unsigned int semillaInicial)
 {
-    _coloresTablero = new Grid<int>(ROWS, COLS);
-    _bombasTablero = new Grid<bool>(ROWS, COLS);
-    _semillaAleatoria = semillaInicial ? semillaInicial : 12345u;
-    RandomFillNoMatch();
+    _coloresTablero = new Grid<int>(ROWS, COLS); // rejilla 8x8 de colores
+    _bombasTablero = new Grid<bool>(ROWS, COLS); // rejilla 8x8 de bombas
+    _semillaAleatoria = semillaInicial ? semillaInicial : 12345u; // guarda semilla (si es 0 usa 12345)
+    RandomFillNoMatch(); // llena todo sin trios iniciales
 }
 
+// Destructor: borra las dos rejillas para no fugar memoria.
 Board::~Board()
 {
-    delete _coloresTablero;
-    delete _bombasTablero;
-    _coloresTablero = nullptr;
-    _bombasTablero = nullptr;
+    delete _coloresTablero; // libera colores
+    delete _bombasTablero; // libera bombas
+    _coloresTablero = nullptr; // apunta a nada (seguro)
+    _bombasTablero = nullptr; // apunta a nada (seguro)
 }
 
-// Da un color aleatorio 0..TYPES-1 usando nuestra semilla LCG propia.
+// Da un color al azar entre 0 y 5 usando nuestra semilla.
 int Board::RandType()
 {
-    return (int)(MatchLogic::LcgNext(_semillaAleatoria) % (unsigned int)TYPES);
+    return (int)(MatchLogic::LcgNext(_semillaAleatoria) % (unsigned int)TYPES); // avanza semilla y recorta a 0..5
 }
 
+// Que color hay en esta casilla. Si esta fuera, dice VACIO.
 int Board::Get(int fila, int columna)
 {
-    if (!InBounds(fila, columna)) return EMPTY;
-    return _coloresTablero->Get(fila, columna);
+    if (!InBounds(fila, columna)) return EMPTY; // fuera = vacio
+    return _coloresTablero->Get(fila, columna); // lee la rejilla
 }
 
+// Hay bomba en esta casilla? Fuera = no.
 bool Board::IsBomb(int fila, int columna)
 {
-    if (!InBounds(fila, columna)) return false;
-    return _bombasTablero->Get(fila, columna);
+    if (!InBounds(fila, columna)) return false; // fuera = no hay
+    return _bombasTablero->Get(fila, columna); // lee la rejilla
 }
 
+// Esta vacia? Fuera se cuenta como vacia. Si no, revisa si es -1.
 bool Board::IsEmptyCell(int fila, int columna)
 {
-    if (!InBounds(fila, columna)) return true;
-    return _coloresTablero->Get(fila, columna) == EMPTY;
+    if (!InBounds(fila, columna)) return true; // fuera = vacia
+    return _coloresTablero->Get(fila, columna) == EMPTY; // -1 = vacia
 }
 
+// Pone un color y dice si es bomba en una casilla.
 void Board::SetCell(int fila, int columna, int color, bool esBomba)
 {
-    if (!InBounds(fila, columna)) return;
-    _coloresTablero->Set(fila, columna, color);
-    _bombasTablero->Set(fila, columna, esBomba);
+    if (!InBounds(fila, columna)) return; // fuera = no hace nada
+    _coloresTablero->Set(fila, columna, color); // guarda color
+    _bombasTablero->Set(fila, columna, esBomba); // guarda si es bomba
 }
 
+// Cambia dos casillas vecinas (color y bomba juntos).
 void Board::SwapCells(int filaOrigen, int columnaOrigen,
                       int filaDestino, int columnaDestino)
 {
-    if (!InBounds(filaOrigen, columnaOrigen)) return;
-    if (!InBounds(filaDestino, columnaDestino)) return;
-    int colorOrigen = _coloresTablero->Get(filaOrigen, columnaOrigen);
-    int colorDestino = _coloresTablero->Get(filaDestino, columnaDestino);
-    bool bombaOrigen = _bombasTablero->Get(filaOrigen, columnaOrigen);
-    bool bombaDestino = _bombasTablero->Get(filaDestino, columnaDestino);
-    _coloresTablero->Set(filaOrigen, columnaOrigen, colorDestino);
-    _coloresTablero->Set(filaDestino, columnaDestino, colorOrigen);
-    _bombasTablero->Set(filaOrigen, columnaOrigen, bombaDestino);
-    _bombasTablero->Set(filaDestino, columnaDestino, bombaOrigen);
+    if (!InBounds(filaOrigen, columnaOrigen)) return; // origen fuera = nada
+    if (!InBounds(filaDestino, columnaDestino)) return; // destino fuera = nada
+    int colorOrigen = _coloresTablero->Get(filaOrigen, columnaOrigen); // guarda color 1
+    int colorDestino = _coloresTablero->Get(filaDestino, columnaDestino); // guarda color 2
+    bool bombaOrigen = _bombasTablero->Get(filaOrigen, columnaOrigen); // guarda bomba 1
+    bool bombaDestino = _bombasTablero->Get(filaDestino, columnaDestino); // guarda bomba 2
+    _coloresTablero->Set(filaOrigen, columnaOrigen, colorDestino); // origen recibe color 2
+    _coloresTablero->Set(filaDestino, columnaDestino, colorOrigen); // destino recibe color 1
+    _bombasTablero->Set(filaOrigen, columnaOrigen, bombaDestino); // origen recibe bomba 2
+    _bombasTablero->Set(filaDestino, columnaDestino, bombaOrigen); // destino recibe bomba 1
 }
 
+// Llena todo al azar pero sin que nazcan trios.
 void Board::RandomFillNoMatch()
 {
-    for (int fila = 0; fila < ROWS; ++fila)
+    for (int fila = 0; fila < ROWS; ++fila) // recorre cada fila
     {
-        for (int columna = 0; columna < COLS; ++columna)
+        for (int columna = 0; columna < COLS; ++columna) // recorre cada columna
         {
-            int colorCandidato = 0;
-            // Elige un color que NO forme 3 con los 2 de la izquierda
-            // ni con los 2 de arriba. Asi el tablero nace sin matches.
+            int colorCandidato = 0; // color que vamos a probar
+            // Prueba hasta 50 colores hasta hallar uno que no forme trio.
             for (int intento = 0; intento < 50; ++intento)
             {
-                colorCandidato = RandType();
+                colorCandidato = RandType(); // saca color al azar
+                // Trio horizontal? los 2 de la izquierda son iguales al candidato.
                 bool formaTrioHorizontal = (columna >= 2 &&
                     _coloresTablero->Get(fila, columna - 1) == colorCandidato &&
                     _coloresTablero->Get(fila, columna - 2) == colorCandidato);
+                // Trio vertical? los 2 de arriba son iguales al candidato.
                 bool formaTrioVertical = (fila >= 2 &&
                     _coloresTablero->Get(fila - 1, columna) == colorCandidato &&
                     _coloresTablero->Get(fila - 2, columna) == colorCandidato);
-                if (!formaTrioHorizontal && !formaTrioVertical) break;
+                if (!formaTrioHorizontal && !formaTrioVertical) break; // bueno, lo usamos
             }
-            _coloresTablero->Set(fila, columna, colorCandidato);
-            _bombasTablero->Set(fila, columna, false);
+            _coloresTablero->Set(fila, columna, colorCandidato); // guarda el color bueno
+            _bombasTablero->Set(fila, columna, false); // al inicio no hay bombas
         }
     }
 }
 
+// Mezcla el tablero si ya no hay jugadas. Max 200 intentos.
 void Board::ShuffleNoMatch()
 {
-    // Fisher-Yates sobre arreglo plano + reintentos hasta condicion valida.
-    int coloresPlanos[ROWS * COLS];
-    for (int fila = 0; fila < ROWS; ++fila)
-        for (int columna = 0; columna < COLS; ++columna)
+    // Copia todos los colores a una lista plana de 64.
+    int coloresPlanos[ROWS * COLS]; // lista de 64 colores
+    for (int fila = 0; fila < ROWS; ++fila) // recorre filas
+        for (int columna = 0; columna < COLS; ++columna) // recorre columnas
             coloresPlanos[fila * COLS + columna] =
-                _coloresTablero->Get(fila, columna);
+                _coloresTablero->Get(fila, columna); // copia el color
 
-    bool marcasTemporales[ROWS][COLS];
-    for (int intentoMezcla = 0; intentoMezcla < 200; ++intentoMezcla)
+    bool marcasTemporales[ROWS][COLS]; // para revisar si hay trios
+    for (int intentoMezcla = 0; intentoMezcla < 200; ++intentoMezcla) // 200 mezclas max
     {
-        // Barajar el arreglo plano
-        for (int indice = ROWS * COLS - 1; indice > 0; --indice)
+        // Baraja la lista (Fisher-Yates: cambia cada posicion con una al azar).
+        for (int indice = ROWS * COLS - 1; indice > 0; --indice) // del ultimo al primero
         {
             unsigned int indiceAleatorio =
-                MatchLogic::LcgNext(_semillaAleatoria) % (unsigned int)(indice + 1);
-            int temporal = coloresPlanos[indice];
-            coloresPlanos[indice] = coloresPlanos[indiceAleatorio];
-            coloresPlanos[indiceAleatorio] = temporal;
+                MatchLogic::LcgNext(_semillaAleatoria) % (unsigned int)(indice + 1); // azar 0..indice
+            int temporal = coloresPlanos[indice]; // guarda uno
+            coloresPlanos[indice] = coloresPlanos[indiceAleatorio]; // cambia
+            coloresPlanos[indiceAleatorio] = temporal; // completa el cambio
         }
-        for (int fila = 0; fila < ROWS; ++fila)
-            for (int columna = 0; columna < COLS; ++columna)
+        // Vacía la lista mezclada de vuelta al tablero. Limpia bombas.
+        for (int fila = 0; fila < ROWS; ++fila) // filas
+            for (int columna = 0; columna < COLS; ++columna) // columnas
             {
                 _coloresTablero->Set(fila, columna,
-                    coloresPlanos[fila * COLS + columna]);
-                _bombasTablero->Set(fila, columna, false); // el shuffle limpia bombas
+                    coloresPlanos[fila * COLS + columna]); // pega color mezclado
+                _bombasTablero->Set(fila, columna, false); // sin bombas (regla simple)
             }
+        // Si quedo sin trios Y con jugada posible, listo.
         if (FindMatches(marcasTemporales) == 0 && HasPossibleMove())
-            return;
+            return; // mezcla buena, salimos
     }
-    // Si tras 200 intentos no se logro (casi imposible en 8x8/6 tipos),
-    // regenera desde cero que por construccion cumple ambas.
-    RandomFillNoMatch();
+    RandomFillNoMatch(); // si 200 fallaron, crea uno nuevo desde cero
 }
 
+// Busca trios con escaneo de lineas. Marca true donde hay match.
 int Board::FindMatches(bool marcaDestruccion[ROWS][COLS])
 {
-    bool marcasPlanas[ROWS * COLS];
+    bool marcasPlanas[ROWS * COLS]; // lista plana de marcas
     int totalMarcadas = MatchLogic::ScanMatches(
-        _coloresTablero, ROWS, COLS, marcasPlanas);
-    for (int fila = 0; fila < ROWS; ++fila)
-        for (int columna = 0; columna < COLS; ++columna)
-            marcaDestruccion[fila][columna] = marcasPlanas[fila * COLS + columna];
-    return totalMarcadas;
+        _coloresTablero, ROWS, COLS, marcasPlanas); // escanea y cuenta
+    for (int fila = 0; fila < ROWS; ++fila) // copia lista plana a matriz
+        for (int columna = 0; columna < COLS; ++columna) // copia cada una
+            marcaDestruccion[fila][columna] = marcasPlanas[fila * COLS + columna]; // pega marca
+    return totalMarcadas; // cuantas casillas son match
 }
 
+// True si existe al menos una jugada valida en todo el tablero.
 bool Board::HasPossibleMove()
 {
-    SwapHint pista;
-    return MatchLogic::FindAnyHint(_coloresTablero, ROWS, COLS, pista);
+    SwapHint pista; // aqui se guardaria la pista
+    return MatchLogic::FindAnyHint(_coloresTablero, ROWS, COLS, pista); // busca cualquiera
 }
 
+// Te dice dos vecinas que al cambiarlas forman trio. false = bloqueado.
 bool Board::FindHint(int& filaOrigen, int& columnaOrigen,
                      int& filaDestino, int& columnaDestino)
 {
-    // Si hay bomba en el tablero, sugerir usarla es valido: busca cualquier
-    // bomba y propone intercambiarla con su vecino derecho/abajo.
-    for (int fila = 0; fila < ROWS; ++fila)
-        for (int columna = 0; columna < COLS; ++columna)
-            if (_bombasTablero->Get(fila, columna))
+    // Si hay bomba, conviene usarla: propone cambiarla con el vecino.
+    for (int fila = 0; fila < ROWS; ++fila) // busca en filas
+        for (int columna = 0; columna < COLS; ++columna) // busca en columnas
+            if (_bombasTablero->Get(fila, columna)) // aqui hay bomba?
             {
-                if (columna + 1 < COLS)
+                if (columna + 1 < COLS) // hay vecino a la derecha?
                 {
-                    filaOrigen = fila; columnaOrigen = columna;
-                    filaDestino = fila; columnaDestino = columna + 1;
-                    return true;
+                    filaOrigen = fila; columnaOrigen = columna; // origen = bomba
+                    filaDestino = fila; columnaDestino = columna + 1; // destino = derecha
+                    return true; // listo
                 }
-                if (fila + 1 < ROWS)
+                if (fila + 1 < ROWS) // hay vecino abajo?
                 {
-                    filaOrigen = fila; columnaOrigen = columna;
-                    filaDestino = fila + 1; columnaDestino = columna;
-                    return true;
+                    filaOrigen = fila; columnaOrigen = columna; // origen = bomba
+                    filaDestino = fila + 1; columnaDestino = columna; // destino = abajo
+                    return true; // listo
                 }
             }
-    SwapHint pista;
-    if (!MatchLogic::FindAnyHint(_coloresTablero, ROWS, COLS, pista)) return false;
-    filaOrigen = pista.r1; columnaOrigen = pista.c1;
-    filaDestino = pista.r2; columnaDestino = pista.c2;
-    return true;
+    SwapHint pista; // pista generica
+    if (!MatchLogic::FindAnyHint(_coloresTablero, ROWS, COLS, pista)) return false; // no hay = bloqueado
+    filaOrigen = pista.r1; columnaOrigen = pista.c1; // primera casilla
+    filaDestino = pista.r2; columnaDestino = pista.c2; // segunda casilla
+    return true; // si hay pista
 }
 
+// Busca la mancha del mismo color (arriba/abajo/izq/der). La marca para romper.
 int Board::CollectRec(int fila, int columna, int colorObjetivo,
                       bool* visitadosPlano, bool* marcasPlano)
 {
-    if (fila < 0 || fila >= ROWS || columna < 0 || columna >= COLS) return 0;
-    int indicePlano = fila * COLS + columna;
-    if (visitadosPlano[indicePlano]) return 0;
-    if (_coloresTablero->Get(fila, columna) != colorObjetivo) return 0;
-    visitadosPlano[indicePlano] = true;
-    marcasPlano[indicePlano] = true;
-    int totalConectadas = 1;
+    if (fila < 0 || fila >= ROWS || columna < 0 || columna >= COLS) return 0; // fuera = 0
+    int indicePlano = fila * COLS + columna; // convierte 2D a indice 0..63
+    if (visitadosPlano[indicePlano]) return 0; // ya revisada = 0
+    if (_coloresTablero->Get(fila, columna) != colorObjetivo) return 0; // otro color = 0
+    visitadosPlano[indicePlano] = true; // marca como revisada
+    marcasPlano[indicePlano] = true; // marca para destruir
+    int totalConectadas = 1; // esta casilla cuenta 1
     totalConectadas += CollectRec(fila + 1, columna, colorObjetivo,
-                                 visitadosPlano, marcasPlano);
+                                 visitadosPlano, marcasPlano); // suma la de abajo
     totalConectadas += CollectRec(fila - 1, columna, colorObjetivo,
-                                 visitadosPlano, marcasPlano);
+                                 visitadosPlano, marcasPlano); // suma la de arriba
     totalConectadas += CollectRec(fila, columna + 1, colorObjetivo,
-                                 visitadosPlano, marcasPlano);
+                                 visitadosPlano, marcasPlano); // suma la derecha
     totalConectadas += CollectRec(fila, columna - 1, colorObjetivo,
-                                 visitadosPlano, marcasPlano);
-    return totalConectadas;
+                                 visitadosPlano, marcasPlano); // suma la izquierda
+    return totalConectadas; // total de la mancha
 }
 
+// Bomba: cuenta la mancha con FloodFill y la marca. NO destruye aqui.
 int Board::DetonatePreview(int filaBomba, int columnaBomba,
                            bool marcaDestruccion[ROWS][COLS])
 {
-    for (int fila = 0; fila < ROWS; ++fila)
-        for (int columna = 0; columna < COLS; ++columna)
-            marcaDestruccion[fila][columna] = false;
-    if (!InBounds(filaBomba, columnaBomba)) return 0;
-    if (_coloresTablero->Get(filaBomba, columnaBomba) == EMPTY) return 0;
+    for (int fila = 0; fila < ROWS; ++fila) // limpia marcas
+        for (int columna = 0; columna < COLS; ++columna) // limpia cada una
+            marcaDestruccion[fila][columna] = false; // todo en false
+    if (!InBounds(filaBomba, columnaBomba)) return 0; // fuera = 0
+    if (_coloresTablero->Get(filaBomba, columnaBomba) == EMPTY) return 0; // vacia = 0
 
-    // PASO 1 (obligatorio): tu FloodFill cuenta la mancha del mismo color.
-    int celdasContadas = _coloresTablero->FloodFill(filaBomba, columnaBomba);
-    (void)celdasContadas;
+    // PASO 1 (obligatorio en la tarea): FloodFill cuenta la mancha.
+    int celdasContadas = _coloresTablero->FloodFill(filaBomba, columnaBomba); // cuenta
+    (void)celdasContadas; // la cuenta ya quedo, seguimos a recolectar
 
-    // PASO 2: recolector gemelo que junta las celdas (para encolarlas).
-    bool visitados[ROWS * COLS];
-    bool marcadas[ROWS * COLS];
-    for (int i = 0; i < ROWS * COLS; ++i)
+    // PASO 2: recolecta las casillas de la mancha para encolarlas.
+    bool visitados[ROWS * COLS]; // cuales ya vimos
+    bool marcadas[ROWS * COLS]; // cuales se van a romper
+    for (int i = 0; i < ROWS * COLS; ++i) // limpia las dos listas
     {
-        visitados[i] = false;
-        marcadas[i] = false;
+        visitados[i] = false; // no visitada
+        marcadas[i] = false; // no marcada
     }
-    int colorBomba = _coloresTablero->Get(filaBomba, columnaBomba);
+    int colorBomba = _coloresTablero->Get(filaBomba, columnaBomba); // color de la bomba
     int totalADestruir = CollectRec(filaBomba, columnaBomba, colorBomba,
-                                   visitados, marcadas);
-    for (int fila = 0; fila < ROWS; ++fila)
-        for (int columna = 0; columna < COLS; ++columna)
-            marcaDestruccion[fila][columna] = marcadas[fila * COLS + columna];
-    return totalADestruir;
+                                   visitados, marcadas); // junta la mancha
+    for (int fila = 0; fila < ROWS; ++fila) // copia a la matriz de salida
+        for (int columna = 0; columna < COLS; ++columna) // copia cada una
+            marcaDestruccion[fila][columna] = marcadas[fila * COLS + columna]; // pega marca
+    return totalADestruir; // cuantas se romperian
 }
 
+// Gravedad: baja todo y rellena arriba con dulces nuevos.
 void Board::ApplyGravity()
 {
-    for (int columna = 0; columna < COLS; ++columna)
+    for (int columna = 0; columna < COLS; ++columna) // columna por columna
     {
-        // escritor = fila mas baja donde debe caer la siguiente gema viva.
-        int filaEscritura = ROWS - 1;
-        for (int filaLectura = ROWS - 1; filaLectura >= 0; --filaLectura)
+        int filaEscritura = ROWS - 1; // fila mas baja donde cae lo vivo
+        for (int filaLectura = ROWS - 1; filaLectura >= 0; --filaLectura) // sube desde abajo
         {
-            int colorActual = _coloresTablero->Get(filaLectura, columna);
-            if (colorActual != EMPTY)
+            int colorActual = _coloresTablero->Get(filaLectura, columna); // color de esta fila
+            if (colorActual != EMPTY) // si no esta vacia, debe bajar
             {
-                if (filaEscritura != filaLectura)
+                if (filaEscritura != filaLectura) // si no ya esta en su lugar
                 {
-                    _coloresTablero->Set(filaEscritura, columna, colorActual);
+                    _coloresTablero->Set(filaEscritura, columna, colorActual); // baja el color
                     _bombasTablero->Set(filaEscritura, columna,
-                        _bombasTablero->Get(filaLectura, columna));
-                    _coloresTablero->Set(filaLectura, columna, EMPTY);
-                    _bombasTablero->Set(filaLectura, columna, false);
+                        _bombasTablero->Get(filaLectura, columna)); // baja su bomba
+                    _coloresTablero->Set(filaLectura, columna, EMPTY); // deja vacio arriba
+                    _bombasTablero->Set(filaLectura, columna, false); // sin bomba arriba
                 }
-                filaEscritura--;
+                filaEscritura--; // siguiente hueco sube uno
             }
         }
-        // Rellena los huecos de arriba con dulces nuevos aleatorios.
-        for (int filaNueva = filaEscritura; filaNueva >= 0; --filaNueva)
+        // Rellena los huecos que quedaron arriba con dulces nuevos.
+        for (int filaNueva = filaEscritura; filaNueva >= 0; --filaNueva) // de donde quedo hasta arriba
         {
-            _coloresTablero->Set(filaNueva, columna, RandType());
-            _bombasTablero->Set(filaNueva, columna, false);
+            _coloresTablero->Set(filaNueva, columna, RandType()); // dulce nuevo al azar
+            _bombasTablero->Set(filaNueva, columna, false); // nuevo = sin bomba
         }
     }
 }
 
+// Guarda foto del tablero (para Undo).
 void Board::SaveTo(BoardSnapshot& snapshotSalida, int puntajeActual,
                    int movimientosActuales) const
 {
-    snapshotSalida.filas = ROWS;
-    snapshotSalida.columnas = COLS;
-    snapshotSalida.puntaje = puntajeActual;
-    snapshotSalida.movimientos = movimientosActuales;
-    for (int fila = 0; fila < ROWS; ++fila)
-        for (int columna = 0; columna < COLS; ++columna)
+    snapshotSalida.filas = ROWS; // guarda filas (8)
+    snapshotSalida.columnas = COLS; // guarda columnas (8)
+    snapshotSalida.puntaje = puntajeActual; // guarda puntos
+    snapshotSalida.movimientos = movimientosActuales; // guarda movimientos
+    for (int fila = 0; fila < ROWS; ++fila) // recorre filas
+        for (int columna = 0; columna < COLS; ++columna) // recorre columnas
         {
             snapshotSalida.colores[fila][columna] =
-                _coloresTablero->Get(fila, columna);
+                _coloresTablero->Get(fila, columna); // copia color
             snapshotSalida.bombas[fila][columna] =
-                _bombasTablero->Get(fila, columna);
+                _bombasTablero->Get(fila, columna); // copia bomba
         }
 }
 
+// Carga una foto (deshacer movimiento).
 void Board::LoadFrom(const BoardSnapshot& snapshotOrigen)
 {
-    for (int fila = 0; fila < ROWS; ++fila)
-        for (int columna = 0; columna < COLS; ++columna)
+    for (int fila = 0; fila < ROWS; ++fila) // recorre filas
+        for (int columna = 0; columna < COLS; ++columna) // recorre columnas
         {
             _coloresTablero->Set(fila, columna,
-                snapshotOrigen.colores[fila][columna]);
+                snapshotOrigen.colores[fila][columna]); // pega color guardado
             _bombasTablero->Set(fila, columna,
-                snapshotOrigen.bombas[fila][columna]);
+                snapshotOrigen.bombas[fila][columna]); // pega bomba guardada
         }
 }
