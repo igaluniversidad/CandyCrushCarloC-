@@ -1,86 +1,78 @@
 # CandyCrushCarloC++ 🍬
 
-Match-3 arcade estilo Candy Crush construido con **tu propia STL** (Stack, Grid, Queue, Flood Fill de `EstructurasDeDatos26-3`) sobre el template SDL3 del docente (`WoWPerro/SDL_DrawReady`).
+Juego Match-3 arcade 8x8 con 6 dulces. Hecho en C++ con SDL3.
+Usa mi propia libreria: Stack, Grid, Queue + ObjectPool y RingBuffer.
+Sin `std::vector`. Codigo simple con nombres completos y comentarios linea por linea.
 
-## Cómo jugar
+## Como jugar
 
-- **Objetivo:** junta puntos antes de que se acaben los **90 segundos** o los **30 movimientos**.
-- **Mover:** clic en un dulce y luego clic en un vecino adyacente (arriba/abajo/izquierda/derecha). Si el intercambio forma **3+ en línea recta** (horizontal o vertical), explota.
-- **Bomba (gema explosiva):** conecta **4 o más** y nace una bomba de ese color. **Intercámbiala** con cualquier vecino para detonar **toda la mancha conectada** de su color (Flood Fill, sin importar la forma).
-- **Cascadas:** si al caer se forma otro match, puntúa **x2, x3…**.
-- **Pista:** si pasas **5 s** sin jugar, dos dulces palpitan en verde (movimiento válido garantizado).
-- **Anti-bloqueo:** si no hay movimientos posibles, el tablero **se mezcla solo** (sin crear matches directos).
-- **Undo:** botón o tecla `U`, hasta **3 usos** por partida (RingBuffer acotado).
+- Objetivo: haz puntos antes de que se acaben 90 segundos o 30 movimientos.
+- Clic en un dulce y luego en un vecino (arriba, abajo, izquierda, derecha).
+- Si forman 3 o mas en linea recta, explotan.
+- Bomba: si rompes 4 o mas, nace una bomba. Cambiala con un vecino y rompe toda la mancha de su color.
+- Cascada: si al caer se forma otro trio, vale x2, x3.
+- Pista: si no juegas 5 segundos, marca 2 dulces en verde.
+- Si no hay jugadas, el tablero se mezcla solo.
+- Undo: tecla `U` o boton, 3 usos por partida.
 
-### Controles
+## Controles
 
-| Entrada | Acción |
-|---|---|
-| Clic / Enter | Jugar, seleccionar e intercambiar |
-| `P` o `Esc` | Pausa (apila escena) |
-| `U` | Deshacer (3 usos) |
-| `R` | Reiniciar partida |
-| `M` | Volver al menú |
-| Cerrar ventana | Salir |
+- Clic: elegir y cambiar dulces.
+- `P` o `Esc`: pausa.
+- `U`: deshacer.
+- `R`: reiniciar.
+- `M`: volver al menu.
+- Cerrar ventana: salir.
 
-### Escenas (máquina de estados con tu Stack)
+## Escenas
 
-`Menu Principal → Gameplay ⇄ Pausa → Game Over`, más `Leaderboard` (top-5 persistente en `Assets/highscores.txt`). Pausa se apila **encima** del Gameplay sin destruirlo; salir/quitar apila y desapila con `Push`/`Pop`.
+Menu -> Juego -> Pausa -> Game Over. Mas Leaderboard con los 5 mejores (`Assets/highscores.txt`).
+La pausa se apila encima del juego sin borrarlo (Push/Pop con mi Stack).
 
-## Estructuras (todas propias, cero `std::vector/stack/map`)
+## Estructuras (todas mias)
 
-| Estructura | Archivo | Uso |
-|---|---|---|
-| `Stack<T>` | `SDLDrawReady/MyLib/Stack.h` | `GameStateManager`: Push/Pop de escenas O(1) |
-| `Grid<T>` | `SDLDrawReady/MyLib/Grid.h` | Tablero 8×8 + `FloodFill` recursivo de la bomba |
-| `LinkedQueue<T>` | `SDLDrawReady/MyLib/LinkedQueue.h` | Cola de eventos de destrucción → cascadas |
-| `ObjectPool<T>` ⭐ propia 1 | `SDLDrawReady/MyLib/ObjectPool.h` | Pool fijo de 384 partículas VFX (cero `new` por frame, 60 FPS) |
-| `RingBuffer<T>` ⭐ propia 2 | `SDLDrawReady/MyLib/RingBuffer.h` | Historial acotado de 4 snapshots para Undo (3 usos) |
+- `Stack` (`MyLib/Stack.h`): guarda las escenas. Push = ir, Pop = volver.
+- `Grid` (`MyLib/Grid.h`): tablero 8x8. Tiene FloodFill para la bomba.
+- `LinkedQueue` (`MyLib/LinkedQueue.h`): cola de celdas a romper. Se vacia en orden.
+- `ObjectPool` (`MyLib/ObjectPool.h`, propia 1): 384 espacios para chispas. Modo simple: 4 cuadritos fijos por explosion, sin fisica.
+- `RingBuffer` (`MyLib/RingBuffer.h`, propia 2): guarda 4 fotos del tablero para 3 undos.
+- `TNode` (`MyLib/TNode.h`): eslabon que usan Stack y Queue.
 
-**Regla de oro:** `Logic/` (`Board`, `MatchLogic`) **no incluye SDL** — solo números. El `Game Loop` lee la lógica y dibuja. Prueba de lógica pura: `LogicTest` (13/13: la L de 3 y el 2×2 dan Flood 3/4 pero Scan 0; la T cuenta 5 sin duplicar el centro).
+Regla de oro: `MyLib/` y `Logic/` (`Board`, `MatchLogic`) no usan SDL. Solo numeros. El juego lee los numeros y los dibuja.
 
-### Retos implementados (5, se reclaman 4 — MODO SIMPLE sin animaciones)
+Detectar trios = escaneo de lineas (horizontal + vertical). FloodFill solo se usa para la bomba.
 
-1. **Highscores persistentes** — `Assets/highscores.txt` + pantalla Leaderboard.
-2. **Undo** — `RingBuffer`, límite 3.
-3. **Multiplicador de cascadas** — x2, x3… (instantáneo, sin animación).
-4. **Hint a los 5 s** — busca un swap válido, resaltado fijo (sin parpadeo).
-5. *(extra)* **Shuffle anti-bloqueo** — garantiza jugada posible sin matches directos.
+## Retos (5 hechos, reclamo 4)
 
-> MODO SIMPLE: se eliminaron a propósito caída suave, delays de swap/pop, escalas y física de partículas para defensa simple. El `ObjectPool` sigue integrado (4 cuadritos fijos por explosión, sin física).
+1. Highscores en archivo + pantalla Leaderboard.
+2. Undo con limite de 3.
+3. Cascadas x2, x3 (al instante, sin animacion).
+4. Pista a los 5 s (marco fijo, sin parpadeo).
+5. Shuffle si no hay jugadas.
+
+Modo simple a proposito: sin caida suave, sin esperas, sin escalas, sin fisica. Todo se resuelve al instante para que sea facil de explicar.
 
 ## Compilar y correr
 
-1. Abrir `SDLDrawReady.sln` en **Visual Studio 2022**, plataforma **x64**.
-2. `Debug` para desarrollar, **`Release`** para entregar (runtime estático `/MT` ya configurado).
-3. El post-build copia solo `SDL3.dll`, `SDL3_image.dll`, `SDL3_ttf.dll`, `libpng16-16.dll` y `Assets/` al `OutDir`.
-4. Doble clic a `x64\Release\SDLDrawReady.exe` o a `Build\SDLDrawReady.exe` (carpeta portable con todo incluido).
+1. Abrir `SDLDrawReady.sln` en Visual Studio 2022, x64.
+2. Compilar en Release.
+3. Doble clic a `x64\Release\SDLDrawReady.exe`.
 
-> Nota: `ExternalLibs/SDL3_ttf` del template solo traía `arm64`; se agregaron los binarios oficiales `x64/x86` (release 3.2.2) para poder enlazar en tu máquina AMD64.
+## Archivos
 
-## Estructura del repo
+- `SDLDrawReady/MyLib/`: mis estructuras.
+- `SDLDrawReady/Logic/`: `Board` + `MatchLogic` (logica pura).
+- `SDLDrawReady/States/`: Menu, Gameplay, Pause, GameOver, Leaderboard.
+- `SDLDrawReady/Assets/`: dulces, bombas, fondo, botones, fuente.
+- `SDLDrawReady/ExternalLibs/`: SDL3 listo para compilar.
+- `docs/`: post-mortem.
 
-```
-CandyCrushCarloC++/
-├── SDLDrawReady.sln
-├── SDLDrawReady/
-│   ├── MyLib/      Stack, Grid, LinkedQueue (tu librería) + ObjectPool, RingBuffer (propias)
-│   ├── Logic/      Board.h/.cpp, MatchLogic.h  (CERO SDL)
-│   ├── States/     MainMenu, Gameplay, Pause, GameOver, Leaderboard
-│   ├── Game/       CandyConfig, Particle, HighScores
-│   ├── Assets/     gem0-5.png, gem0-5_bomb.png, logo, mascot, bg, btn, panel, font, highscores
-│   ├── Platform, Image, Text, GameState(Mananager)  (engine del docente + fixes)
-│   └── ExternalLibs/ SDL3, SDL3_image, SDL3_ttf (x64/x86/arm64)
-├── Build/          juego portable (generado, no se versiona)
-└── docs/           post-mortem
-```
+## Creditos
 
-## Créditos
+- Base: `WoWPerro/SDL_DrawReady` (SDL3, MIT).
+- Arte gratis: "Match-3 Game Asset UI Effects Free" (Cutie Tutti Frutti, Ajay Karat).
+- Libreria: `EstructurasDeDatos26-3` (Igal Shturman Poplawsky).
 
-- Engine base: [WoWPerro/SDL_DrawReady](https://github.com/WoWPerro/SDL_DrawReady) (SDL3 + SDL_image + SDL_ttf, MIT).
-- Arte: pack gratuito **"Match-3 Game Asset UI Effects Free" (Cutie Tutti Frutti, arte y animación de Ajay Karat)** — personajes, fondo, logo, botones, paneles y fuente SnowDream. Las bombas son el personaje del pack con franjas y brillo agregados en `docs/gen_pack_assets.py`.
-- Librería de estructuras: `EstructurasDeDatos26-3` (Igal Shturman Poplawsky).
+## Datos
 
-## Datos del alumno
-
-- Nombre: Carlo Igal Shturman Poplawsky · Matrícula: 18139 · SAE Institute México — Estructuras de Datos
+Carlo Igal Shturman Poplawsky, matricula 18139, SAE Mexico, Estructuras de Datos.
